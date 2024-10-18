@@ -1,69 +1,54 @@
+import re
+from pytube import YouTube
 from flask import request, jsonify
+
 from config import app, db
-from models import Contact
 
 
-@app.route("/contacts", methods=["GET"])
-def get_contacts():
-    contacts = Contact.query.all()
-    json_contacts = list(map(lambda x: x.to_json(), contacts))
-    return jsonify({"contacts": json_contacts})
+def extract_video_id(url):
+    # Regular expression to match YouTube video IDs
+    pattern = r"(?:v=|\/|youtu\.be\/|\/embed\/|\/v\/|\/watch\?v=|\/\?v=|&v=|\/shorts\/)([a-zA-Z0-9_-]{11})"
+    match = re.search(pattern, url)
+
+    if match:
+        return match.group(1)
+    else:
+        return None
 
 
-@app.route("/create_contact", methods=["POST"])
-def create_contact():
-    first_name = request.json.get("firstName")
-    last_name = request.json.get("lastName")
-    email = request.json.get("email")
-
-    if not first_name or not last_name or not email:
-        return (
-            jsonify({"message": "You must include a first name, last name and email"}),
-            400,
-        )
-
-    new_contact = Contact(first_name=first_name, last_name=last_name, email=email)
+@app.route("/api/video/info", methods=["POST"])
+def handle_url():
+    url = request.json.get("url")
+    video_id = extract_video_id(url)
+    if video_id is None:
+        return jsonify({"message": "Invalid url!"}), 400
     try:
-        db.session.add(new_contact)
-        db.session.commit()
+        thumbnail = (
+            f"https://img.youtube.com/vi/{extract_video_id(url)}/maxresdefault.jpg"
+        )
+        yt = YouTube(url)
+        title = yt.title
+        channel = yt.author
+        h, m, s = yt.length // 3600, (yt.length % 3600) // 60, yt.length % 60
+        duration = f"{h}:{m:02}:{s:02}" if h else (f"{m}:{s:02}" if m else f"{s}")
+        return jsonify(
+            {
+                "title": title,
+                "thumbnail": thumbnail,
+                "channel": channel,
+                "duration": duration,
+            }
+        )
     except Exception as e:
-        return jsonify({"message": str(e)}, 400)
-
-    return jsonify({"message": "User created!"}), 201
+        return jsonify({"message": "Video info not found", "log": str(e)}), 404
 
 
-@app.route("/update_contact/<int:user_ud>", methods=["PATCH"])
-def update_contact(user_id):
-    contact = Contact.query.get(user_id)
-
-    if not contact:
-        return jsonify({"message": "User not found"}), 404
-
-    data = request.json
-    contact.first_name = data.get("firstName", contact.first_name)
-    contact.last_name = data.get("lastName", contact.last_name)
-    contact.email = data.get("email", contact.email)
-
-    db.session.commit()
-
-    return jsonify({"message": "User updated"})
-
-
-@app.route("/delete_contact/<int:user_id>", methods=["DELETE"])
-def delete_contact(user_id):
-    contact = Contact.query.get(user_id)
-
-    if not contact:
-        return jsonify({"message": "User not found"}), 404
-
-    db.session.delete(contact)
-    db.session.commit()
-
-    return jsonify({"message": "User deleted"})
+@app.route("/api/progress", methods=["POST"])
+def return_progress():
+    return jsonify({"progress": 0})
 
 
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-
     app.run(debug=True)
