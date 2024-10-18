@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+// this file is responsible for the second page of the app, 
+// where the user starts the karaoke generation.
+
 function VideoPage() {
+
+  // variaveis auxiliares
   const location = useLocation();
   const navigate = useNavigate();
-  const { url } = location.state || {};
+  const { url } = location.state || {}; // recebe a url do video da rota /
   const [videoInfo, setVideoInfo] = useState(null);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [loadingVideo, setLoadingVideo] = useState(false);
@@ -16,22 +21,27 @@ function VideoPage() {
   const [videoUrl, setVideoUrl] = useState('');
   const [startedProcessing, setStartedProcessing] = useState(false); // Para controlar quando o processo de karaoke começou
 
+  // Obtem a thumbnail do video com maior qualidade disponivel.
   const getHighQualityThumbnail = (videoId) => {
     return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
   };
 
+  // Obtem o ID do video do yt.
   const extractVideoId = (url) => {
     const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
     const matches = url.match(regex);
     return matches ? matches[1] : null;
   };
 
+  // formata a duração do video 
   const formatDuration = (duration) => {
     const minutes = Math.floor(duration / 60);
     const seconds = duration % 60;
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
+  // essa parte envia uma requisição para a api no backend, do tipo POST (envia a url),
+  // e armazena na variável VideoInfo as informaçoes do video.
   useEffect(() => {
     const fetchVideoInfo = async () => {
       try {
@@ -61,7 +71,10 @@ function VideoPage() {
     }
   }, [url]);
 
-  const handleDeleteTemporaryFiles = async () => {
+   // essa parte so serve para deletar os arquivos
+   // provavelmente sera apagada depois
+   // ---------------------------------------------------------------------------------------------
+  /*const handleDeleteTemporaryFiles = async () => {
     try {
       // Chamada para deletar os arquivos temporários antes de iniciar o processo
       const response = await fetch('http://localhost:8000/api/video/delete-temp', {
@@ -78,26 +91,31 @@ function VideoPage() {
     } catch (error) {
       console.error('Erro ao deletar arquivos temporários:', error);
     }
-  };
-
+  };*/
+ // ---------------------------------------------------------------------------------------------
+// inicia o processo de geração
   const handleGenerateKaraoke = async () => {
-    setLoadingVideo(true);
-    setStartedProcessing(true); // Marca que o processo de geração começou
+    setLoadingVideo(true); 
+    setStartedProcessing(true); 
     setProgress(0);
     setTotalProgress(0);
     setError('');
 
     // Deletar arquivos temporários antes de iniciar o processo
-    await handleDeleteTemporaryFiles();
+    //await handleDeleteTemporaryFiles();
 
+    // essa parte prepara o front end para receber dados do back end
     try {
+      //permite que o servidor envie atualizações em tempo real para o cliente
       const eventSource = new EventSource('http://localhost:8000/api/progress');
       eventSourceRef.current = eventSource;
 
+      //é disparado sempre que o servidor envia dados para o cliente, armazenando o progresso;
       eventSource.onmessage = (event) => {
         const data = JSON.parse(event.data);
         const log = data.log;
 
+        // Extrai a porcentagem do log de progresso recebido do backend.
         const extractProgressFromLog = (log) => {
           const progressRegex = /(\d+)%/;
           const match = log.match(progressRegex);
@@ -107,6 +125,9 @@ function VideoPage() {
           return null;
         };
 
+        // Aqui ele formata a %, pois são 2 scripts que rodam de 0 a 100, e ele faz com que cada
+        // script seja responsavel por 50% do processamento.
+        // Acho que essa parte ta meio bugada, mas depois podemos testar direito
         const extractedProgress = extractProgressFromLog(log);
         if (extractedProgress !== null) {
           // Ajustar o progresso com base em onde estamos no processo
@@ -116,14 +137,15 @@ function VideoPage() {
             setTotalProgress(50 + (extractedProgress - 50)); // Segundo script: progresso vai de 50 a 100%
           }
         }
-
+        // se o log enviar essa string ele termina o processo.
         if (log.includes('Vídeo gerado com sucesso')) {
           setVideoGenerated(true);
           setVideoUrl('http://localhost:8000/api/video/final');
           eventSource.close(); // Fechar conexão SSE
         }
       };
-
+      // Essa parte diz ao back end que ja está pronto para receber os dados
+      // e faz com que ele inicie os scripts python (ver rota /karaoke em server.js)
       const response = await fetch('http://localhost:8000/api/video/karaoke', {
         method: 'POST',
         headers: {
@@ -143,8 +165,12 @@ function VideoPage() {
     }
   };
 
+  // Essa parte tambem deleta os video e pode ser ignorada
+  // pois faremos tudo no backend de forma mais simples
+  // manter a funcionalidade do botao
+   // ---------------------------------------------------------------------------------------------
   const handleDeleteVideo = async () => {
-    try {
+    /*try {
       // Chamada para deletar o vídeo ao clicar no botão "Voltar"
       const response = await fetch('http://localhost:8000/api/video/delete', {
         method: 'POST',
@@ -157,10 +183,11 @@ function VideoPage() {
       }
     } catch (error) {
       console.error('Erro ao deletar o vídeo:', error);
-    }
-    navigate('/');
+    }*/
+    navigate('/'); // voltar para a pagina anterior ao clicar no botao voltar
   };
 
+ // ---------------------------------------------------------------------------------------------
   return (
     <div className="min-h-screen flex flex-col font-jetbrains">
       <header className="p-4 flex items-center">
@@ -179,7 +206,7 @@ function VideoPage() {
 
           <button
             className="mt-4 p-2 bg-gray-300 text-black rounded hover:bg-gray-400"
-            onClick={handleDeleteVideo} // Função que deleta o vídeo ao clicar no botão "Voltar"
+            onClick={handleDeleteVideo} // Retorna a pagina anterior
           >
             Voltar
           </button>
