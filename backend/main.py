@@ -1,51 +1,32 @@
-import re
-from pytube import YouTube
-from flask import request, jsonify
+from flask import request, jsonify, Response
 
+from process import *
 from config import app, db
 
 
-def extract_video_id(url):
-    # Regular expression to match YouTube video IDs
-    pattern = r"(?:v=|\/|youtu\.be\/|\/embed\/|\/v\/|\/watch\?v=|\/\?v=|&v=|\/shorts\/)([a-zA-Z0-9_-]{11})"
-    match = re.search(pattern, url)
-
-    if match:
-        return match.group(1)
-    else:
-        return None
+progress = 10
 
 
 @app.route("/api/video/info", methods=["POST"])
-def handle_url():
+def post_video_info():
     url = request.json.get("url")
-    video_id = extract_video_id(url)
-    if video_id is None:
-        return jsonify({"message": "Invalid url!"}), 400
-    try:
-        thumbnail = (
-            f"https://img.youtube.com/vi/{extract_video_id(url)}/maxresdefault.jpg"
-        )
-        yt = YouTube(url)
-        title = yt.title
-        channel = yt.author
-        h, m, s = yt.length // 3600, (yt.length % 3600) // 60, yt.length % 60
-        duration = f"{h}:{m:02}:{s:02}" if h else (f"{m}:{s:02}" if m else f"{s}")
-        return jsonify(
-            {
-                "title": title,
-                "thumbnail": thumbnail,
-                "channel": channel,
-                "duration": duration,
-            }
-        )
-    except Exception as e:
-        return jsonify({"message": "Video info not found", "log": str(e)}), 404
+    video_info = get_video_info(url)
+    if video_info is None:
+        return jsonify({"message": "Could not get info on given url"}), 400
+    return jsonify(video_info)
 
 
-@app.route("/api/progress", methods=["POST"])
-def return_progress():
-    return jsonify({"progress": 0})
+def increase_progress():
+    global progress
+    progress += 20
+    return progress
+
+
+@app.route("/api/progress")
+def send_progress():
+    return Response(
+        f"data: {increase_progress()}\n\n", content_type="text/event-stream"
+    )
 
 
 if __name__ == "__main__":

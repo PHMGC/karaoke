@@ -1,16 +1,17 @@
 from config import db
 
 
-class Contact(db.Model):
+class VideoInfo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String(80), unique=False, nullable=False)
-    last_name = db.Column(db.String(80), unique=False, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
+    uid = db.Column(db.String(200), unique=True, nullable=False)
+    title = db.Column(db.String(200), unique=False, nullable=False)
+    channel = db.Column(db.String(200), unique=True, nullable=False)
+    duration = db.Column(db.String(200), unique=True, nullable=False)
 
     def to_json(self):
         return {
-            "id": self.id,
-            "firstName": self.first_name,
-            "lastName": self.last_name,
-            "email": self.email,
+            "uid": self.uid,
+            "title": self.title,
+            "channel": self.channel,
+            "duration": self.duration,
         }
