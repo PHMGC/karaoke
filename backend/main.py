@@ -22,7 +22,7 @@ def increase_progress():
     return progress
 
 
-@app.route("/api/progress")
+@app.route("/api/progress", methods=["POST"])
 def send_progress():
     return Response(
         f"data: {increase_progress()}\n\n", content_type="text/event-stream"

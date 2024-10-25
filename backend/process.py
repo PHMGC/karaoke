@@ -4,12 +4,19 @@ import time
 import requests
 import subprocess
 from pytubefix import YouTube
-
-from config import db
-from models import VideoInfo
+from faster_whisper import WhisperModel
 import torch
 
 data_folder = "data"
+
+
+def format_time(seconds):
+    # Format time in seconds to SRT time format (HH:MM:SS,mmm)
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = int(seconds % 60)
+    millis = int((seconds - int(seconds)) * 1000)
+    return f"{hours:02}:{minutes:02}:{secs:02},{millis:03}"
 
 
 def extract_uid(url):
@@ -54,14 +61,7 @@ def get_video(url):
     if not os.path.exists(video_path):
         os.makedirs(video_path)
     else:
-        pass  # return
-
-    response = requests.get(f"https://img.youtube.com/vi/{uid}/maxresdefault.jpg")
-    if response.status_code == 200:
-        with open(os.path.join(video_path, "thumbnail.jpg"), "wb") as f:
-            f.write(response.content)
-    else:
-        raise ConnectionError
+        return
 
     yt = YouTube(url)
     stream_video = yt.streams.get_highest_resolution()
@@ -69,28 +69,21 @@ def get_video(url):
     stream = yt.streams.filter(only_audio=True).first()
     stream.download(output_path=video_path, filename="audio.mp3")
 
-    # title = yt.title
-    # channel = yt.author
-    # h, m, s = yt.length // 3600, (yt.length % 3600) // 60, yt.length % 60
-    # duration = f"{h}:{m:02}:{s:02}" if h else (f"{m}:{s:02}" if m else f"{s}")
+    thumbs_options = [
+        "maxresdefault.jpg",
+        "sddefault.jpg",
+        "hqdefault.jpg",
+        "mqdefault.jpg",
+        "default.jpg",
+    ]
 
-    # video_info = VideoInfo(uid=uid, title=title, channel=channel, duration=duration)
-
-    # try:
-    #     db.session.add(video_info)
-    #     db.session.commit()
-    # except Exception as e:
-    #     raise e
-
-
-def get_progress_output(console):
-    if console.poll() is not None or console is None or console.stderr is None:
-        return 100
-    print("saida", console.stdout.readline())
-    print("erro", console.stderr.readline())
-    return 0
-    # result = "".join(re.findall(r"\d+", console.stderr.readline()[:5]))
-    # return 0 if len(result) == 0 or not result.isnumeric() else int(result)
+    for option in thumbs_options:
+        response = requests.get(f"https://img.youtube.com/vi/{uid}/" + option)
+        if response.status_code == 200:
+            with open(os.path.join(video_path, "thumbnail.jpg"), "wb") as f:
+                f.write(response.content)
+            return
+    raise ConnectionError
 
 
 def demucs_transcript(uid):
@@ -99,10 +92,10 @@ def demucs_transcript(uid):
     if os.path.exists(os.path.join(audio_folder, "vocals.wav")) or os.path.exists(
         os.path.join(audio_folder, "no_vocals.wav")
     ):
-        pass  # return
+        return
     print("demucs started")
     start = time.time()
-    console = subprocess.Popen(
+    subprocess.run(
         [
             "demucs",
             os.path.join(audio_folder, "audio.mp3"),
@@ -110,15 +103,8 @@ def demucs_transcript(uid):
             "vocals",
             "--out",
             audio_folder,
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
+        ]
     )
-    progress = 0
-    while console.poll() is None:
-        progress = get_progress_output(console)
-        print("demucs:", progress)
     finnish = time.time()
     print(f"demucs finnished (took {format_time(finnish - start)})")
 
@@ -139,15 +125,6 @@ def demucs_transcript(uid):
         raise SystemError
 
 
-def format_time(seconds):
-    # Format time in seconds to SRT time format (HH:MM:SS,mmm)
-    hours = int(seconds // 3600)
-    minutes = int((seconds % 3600) // 60)
-    secs = int(seconds % 60)
-    millis = int((seconds - int(seconds)) * 1000)
-    return f"{hours:02}:{minutes:02}:{secs:02},{millis:03}"
-
-
 def whisper_transcript(uid):
     audio_folder = os.path.join(data_folder, uid)
     if os.path.exists(os.path.join(audio_folder, "vocals.srt")):
@@ -159,47 +136,31 @@ def whisper_transcript(uid):
     start = time.time()
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("using", device)
-    # subtitles = model.transcribe(audio_path, verbose=False)
-    console = subprocess.Popen(
-        [
-            "whisper",
-            audio_path,
-            "--model",
-            "medium",
-            "--device",
-            device,
-            "--verbose",
-            "False",
-            "--output_dir",
-            audio_folder,
-            "--output_format",
-            "srt",
-            "-y",
-        ]
-    )
-    progress = 0
-    while console.poll() is None:
-        progress = get_progress_output(console)
-        print("whisper:", progress)
-        time.sleep(1)
-    console.wait()
+
+    model = WhisperModel("large-v3", device=device)
+    # language_info = model.detect_language_multi_segment(audio_path)
+    segments, _ = model.transcribe(audio_path, beam_size=5, language=None)
+    # print(
+    #     "Detected language '%s' with probability %f"
+    #     % (language_info["language_code"], language_info["language_confidence"])
+    # )
+
+    with open(os.path.join(audio_folder, "vocals.srt"), "w", encoding="utf-8") as f:
+        for i, segment in enumerate(segments):
+            print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
+            # Write the index
+            f.write(f"{i + 1}\n")
+
+            # Format and write the timecodes
+            start_time = format_time(segment.start)
+            end_time = format_time(segment.end)
+            f.write(f"{start_time} --> {end_time}\n")
+
+            # Write the text
+            f.write(f"{segment.text}\n\n")
+
     finnish = time.time()
     print(f"whisper finnished (took {format_time(finnish - start)})")
-
-    # with open(os.path.join(audio_folder, "vocals.srt"), "w", encoding="utf-8") as f:
-    #     for segment in subtitles["segments"]:
-    #         # Write the index
-    #         f.write(f"{segment["id"] + 1}\n")
-
-    #         # Format and write the timecodes
-    #         start_time = format_time(segment["start"])
-    #         end_time = format_time(segment["end"])
-    #         f.write(f"{start_time} --> {end_time}\n")
-
-    #         # Write the text
-    #         f.write(f"{segment['text']}\n\n")
-
-    print(".srt saved")
 
 
 def generate_video(uid):
@@ -245,3 +206,7 @@ def generate_video(uid):
         ],
         cwd=folder_path,
     )
+
+
+def cleanup(uid):
+    no_delete = []
