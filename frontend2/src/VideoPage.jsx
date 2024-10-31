@@ -18,23 +18,22 @@ function VideoPage() {
     const eventSourceRef = useRef(null);
     const [videoGenerated, setVideoGenerated] = useState(false);
     const [videoUrl, setVideoUrl] = useState('');
-    const [startedProcessing, setStartedProcessing] = useState(false); // Para controlar quando o processo de karaoke começou
 
 
-
-    // essa parte envia uma requisição para a api no backend, do tipo POST (envia a url),
-    // e armazena na variável VideoInfo as informaçoes do video.
     useEffect(() => {
         const fetchVideoInfo = async () => {
             try {
-                const response = await fetch('api/video/info', {
+                const response = await fetch('/api/video/info', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ url }),
                 });
-
+                if (response.status != 200) {
+                    console.error("error receiving video info:")
+                    console.error(response)
+                }
                 const data = await response.json();
                 setVideoInfo({
                     title: data.title,
@@ -46,6 +45,7 @@ function VideoPage() {
                 console.error('Erro ao buscar informações do vídeo:', error);
             }
         };
+
         if (url) {
             fetchVideoInfo();
         }
@@ -54,78 +54,38 @@ function VideoPage() {
     // inicia o processo de geração
     const handleGenerateKaraoke = async () => {
         setLoadingVideo(true);
-        setStartedProcessing(true);
-        setProgress(0);
         setError('');
 
+        // essa parte prepara o front end para receber dados do back end
         try {
-            // Solicita ao backend que inicie o processamento do vídeo
-            const response = await fetch('api/video/karaoke', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ url }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Erro ao processar o vídeo.');
-            }
-
-            // Cria a conexão SSE para receber atualizações de progresso em tempo real
-            const eventSource = new EventSource('api/video/karaoke');
+            //permite que o servidor envie atualizações em tempo real para o cliente
+            const eventSource = new EventSource('/api/progress');
             eventSourceRef.current = eventSource;
 
+            //é disparado sempre que o servidor envia dados para o cliente, armazenando o progresso;
             eventSource.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                const { progress, videoUrl, error } = data;
+                setProgress(parseFloat(event.data));
+                //console.log(`progress: ${progress}%`)
 
-                if (error) {
-                    setError(error);
-                    eventSource.close();
-                    return;
+                if (progress >= 100) {
+                    setVideoGenerated(true);
+                    setLoadingVideo(false);
+                    setVideoUrl('/api/video/final');
+                    eventSource.close(); // Fechar conexão SSE
                 }
 
-                if (typeof progress === 'number' && progress >= 0 && progress <= 100) {
-                    setProgress(progress); // Atualiza o estado da barra de progresso
-
-                    // Fecha a conexão SSE e configura o vídeo ao atingir 100% de progresso
-                    if (progress === 100) {
-                        setVideoGenerated(true);
-                        setVideoUrl(videoUrl); // URL recebida do backend
-                        eventSource.close();
-                    }
-                }
             };
         } catch (error) {
             setError(error.message);
-        } finally {
             setLoadingVideo(false);
         }
     };
 
-    // Essa parte tambem deleta os video e pode ser ignorada
-    // pois faremos tudo no backend de forma mais simples
-    // manter a funcionalidade do botao
-    // ---------------------------------------------------------------------------------------------
-    const handleDeleteVideo = async () => {
-        /*try {
-          // Chamada para deletar o vídeo ao clicar no botão "Voltar"
-          const response = await fetch('api/video/delete', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-          if (response.ok) {
-            //console.log('Vídeo deletado');
-          }
-        } catch (error) {
-          console.error('Erro ao deletar o vídeo:', error);
-        }*/
-        navigate('/'); // voltar para a pagina anterior ao clicar no botao voltar
+    // retonar a home page
+    const returnHomePage = async () => {
+        eventSourceRef.current.close()
+        navigate('/'); // voltar para a home page ao clicar no botao voltar
     };
-
     // ---------------------------------------------------------------------------------------------
     return (
         <div className="min-h-screen flex flex-col font-jetbrains">
@@ -145,7 +105,7 @@ function VideoPage() {
 
                     <button
                         className="mt-4 p-2 bg-gray-300 text-black rounded hover:bg-gray-400"
-                        onClick={handleDeleteVideo} // Retorna a pagina anterior
+                        onClick={returnHomePage} // Retorna a home page
                     >
                         Voltar
                     </button>
@@ -184,32 +144,33 @@ function VideoPage() {
                                     </button>
                                 )}
 
-                                {loadingVideo && progress < 100 && (
-                                    <div className="w-full max-w-3xl bg-gray-200 mt-4 rounded-2xl h-5">
-                                        <div
-                                            className="bg-blue-500 text-xs leading-none py-1 text-center rounded-2xl text-white h-full"
-                                            style={{ width: `${progress}%` }}
-                                        >
-                                            {progress.toFixed(0)}%
+                                {loadingVideo ? (
+                                    progress < 100 ? (
+                                        <div>
+                                            <div className="w-full max-w-3xl bg-gray-200 mt-4 rounded-2xl h-5">
+                                                <div
+                                                    className="bg-blue-500 text-xs leading-none py-1 text-center rounded-2xl text-white h-full"
+                                                    style={{ width: `${progress}%` }}
+                                                >
+                                                    {progress.toFixed(0)}%
+                                                </div>
+                                            </div>
+                                            <div className="mt-4 text-lg font-bold text-center flex flex-col items-center gap-1">
+                                                <p>Seu vídeo está sendo gerado, prepare-se para cantar 🎤</p>
+                                                <p className='text-sm'>Essa etapa pode demorar alguns minutos</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-
-                                {startedProcessing && progress < 100 && progress < 100 ? (
-                                    <div className="mt-4 text-lg font-bold text-center flex flex-col items-center gap-1">
-                                        <p>Seu vídeo está sendo gerado, prepare-se para cantar 🎤</p>
-                                        <p className='text-sm'>Essa etapa pode demorar alguns minutos</p>
-                                    </div>
-                                ) : (progress === 100 && !videoGenerated) ? (
-                                    <div className="mt-4 flex flex-col items-center">
-                                        <div className="animate-spin h-12 w-12 border-4 border-blue-500 border-t-transparent rounded-full mt-4"></div>
-                                        <p className='mt-2 text-lg'>Carregando o vídeo...</p>
-                                    </div>
+                                    ) : (
+                                        <div className="mt-4 text-lg font-bold text-center">
+                                            <p>Seu vídeo foi gerado com sucesso! 🎉</p>
+                                            <button onClick={() => { }} className="mt-2 bg-blue-500 text-white py-2 px-4 rounded">Baixar Vídeo</button>
+                                        </div>
+                                    )
                                 ) : null}
 
                                 <button
                                     className="mt-4 p-2 bg-gray-300 text-black rounded hover:bg-gray-400"
-                                    onClick={handleDeleteVideo}
+                                    onClick={returnHomePage}
                                 >
                                     Voltar
                                 </button>
@@ -220,9 +181,6 @@ function VideoPage() {
                     )}
                 </div>
             )}
-            <footer className='flex items-center justify-center pb-2'>
-                <span className=" text-[.78rem] sm:text-sm">© {new Date().getFullYear()} | Gustavo Ribeiro & Pedro Cortez</span>
-            </footer>
         </div>
     );
 }

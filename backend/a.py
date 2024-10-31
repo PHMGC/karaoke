@@ -15,8 +15,8 @@ def run_everything(url):
     uid = extract_uid(url)
     demucs_transcript(uid)
     whisper_transcript(uid)
-    # generate_video(uid)
+    generate_video(uid)
 
 
 if __name__ == "__main__":
-    run_everything(url8)
+    run_everything(url3)

@@ -1,11 +1,10 @@
-import os, shutil
-import re
-import time
+import os, shutil, re, time, subprocess
 import requests
-import subprocess
 from pytubefix import YouTube
-from faster_whisper import WhisperModel
 import torch
+from faster_whisper import WhisperModel
+
+from models import VideoInfo
 
 data_folder = "data"
 
@@ -35,39 +34,58 @@ def get_video_info(url):
     if uid is None:
         return None
     try:
-        thumbnail = f"https://img.youtube.com/vi/{uid}/maxresdefault.jpg"
-        yt = YouTube(url)
-        title = yt.title
-        channel = yt.author
-        h, m, s = yt.length // 3600, (yt.length % 3600) // 60, yt.length % 60
-        duration = f"{h}:{m:02}:{s:02}" if h else (f"{m}:{s:02}" if m else f"{s}")
+        thumbs_options = [
+            "maxresdefault.jpg",
+            "sddefault.jpg",
+            "hqdefault.jpg",
+            "mqdefault.jpg",
+            "default.jpg",
+        ]
+
+        thumbnail = ""
+        for option in thumbs_options:
+            response = requests.get(f"https://img.youtube.com/vi/{uid}/" + option)
+            if response.status_code == 200:
+                thumbnail = f"https://img.youtube.com/vi/{uid}/maxresdefault.jpg"
+                break
+
+        vd = YouTube(url)
+        title = vd.title
+        channel = vd.author
+        h, m, s = vd.length // 3600, (vd.length % 3600) // 60, vd.length % 60
+        duration = f"{h}:{m:02}:{s:02}" if h else (f"{m}:{s:02}" if m else f"{s}s")
         return {
+            "uid": uid,
             "title": title,
             "thumbnail": thumbnail,
             "channel": channel,
             "duration": duration,
         }
 
-    except Exception:
-        return None
+    except Exception as e:
+        raise e("Error getting video id!")
 
 
-def get_video(url):
+def get_video(url, debug=False):
+    print("get_video() started")
+    start = time.time()
+    
     uid = extract_uid(url)
-    if uid is None:
-        raise ValueError
 
     video_path = os.path.join(data_folder, uid)
     if not os.path.exists(video_path):
         os.makedirs(video_path)
-    else:
-        return
 
-    yt = YouTube(url)
-    stream_video = yt.streams.get_highest_resolution()
-    stream_video.download(output_path=video_path, filename="video.mp4")
-    stream = yt.streams.filter(only_audio=True).first()
-    stream.download(output_path=video_path, filename="audio.mp3")
+    try:
+        vd = YouTube(url)
+        if debug:
+            stream_video = vd.streams.get_highest_resolution()
+            stream_video.download(output_path=video_path, filename="video.mp4")
+
+        stream = vd.streams.filter(only_audio=True).first()
+        stream.download(output_path=video_path, filename="audio.mp3")
+    except Exception as e:
+        raise e("Error getting video info")
 
     thumbs_options = [
         "maxresdefault.jpg",
@@ -77,24 +95,24 @@ def get_video(url):
         "default.jpg",
     ]
 
+
     for option in thumbs_options:
         response = requests.get(f"https://img.youtube.com/vi/{uid}/" + option)
         if response.status_code == 200:
             with open(os.path.join(video_path, "thumbnail.jpg"), "wb") as f:
                 f.write(response.content)
-            return
-    raise ConnectionError
+
+            finnish = time.time()
+            print(f"get_video() was successfull! (took {format_time(finnish - start)})")
+        
+    raise ConnectionError("Error downloading thumbnail!")
 
 
 def demucs_transcript(uid):
-    # Load audio file
-    audio_folder = os.path.join(data_folder, uid)
-    if os.path.exists(os.path.join(audio_folder, "vocals.wav")) or os.path.exists(
-        os.path.join(audio_folder, "no_vocals.wav")
-    ):
-        return
-    print("demucs started")
+    print("demucs_transcript() started")
     start = time.time()
+
+    audio_folder = os.path.join(data_folder, uid)
     subprocess.run(
         [
             "demucs",
@@ -103,11 +121,10 @@ def demucs_transcript(uid):
             "vocals",
             "--out",
             audio_folder,
-        ]
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
-    finnish = time.time()
-    print(f"demucs finnished (took {format_time(finnish - start)})")
-
     demucs_folder = os.path.join(audio_folder, "htdemucs")
     if os.path.exists(demucs_folder):
         vocals = os.path.join(audio_folder, "vocals.wav")
@@ -122,32 +139,40 @@ def demucs_transcript(uid):
         shutil.move(os.path.join(demucs_folder, "audio", "no_vocals.wav"), audio_folder)
         shutil.rmtree(demucs_folder)
     else:
-        raise SystemError
+        raise SystemError("demucs failed!")
+    
+    finnish = time.time()
+    print(f"demucs_transcript() was successfull! (took {format_time(finnish - start)})")
 
 
-def whisper_transcript(uid):
+def whisper_transcript(uid, queue=None):
+    print("whisper_transcript() started!")
+    start = time.time()
+
     audio_folder = os.path.join(data_folder, uid)
-    if os.path.exists(os.path.join(audio_folder, "vocals.srt")):
-        pass  # return
 
     audio_path = os.path.join(audio_folder, "vocals.wav")
 
-    print("whisper started")
-    start = time.time()
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("using", device)
 
     model = WhisperModel("large-v3", device=device)
-    # language_info = model.detect_language_multi_segment(audio_path)
-    segments, _ = model.transcribe(audio_path, beam_size=5, language=None)
-    # print(
-    #     "Detected language '%s' with probability %f"
-    #     % (language_info["language_code"], language_info["language_confidence"])
-    # )
+    language_info = model.detect_language_multi_segment(audio_path)
+    segments, _ = model.transcribe(
+        audio_path, beam_size=5, language=language_info["language_code"]
+    )
+    print(
+        "Detected language '%s' with probability %f"
+        % (language_info["language_code"], language_info["language_confidence"])
+    )
 
     with open(os.path.join(audio_folder, "vocals.srt"), "w", encoding="utf-8") as f:
         for i, segment in enumerate(segments):
-            print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
+            progress = i/len(segments) * 100
+            if queue is not None:
+                queue.put(progress)
+            print(f"Progress: {progress}%")
+            # print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
             # Write the index
             f.write(f"{i + 1}\n")
 
@@ -159,11 +184,17 @@ def whisper_transcript(uid):
             # Write the text
             f.write(f"{segment.text}\n\n")
 
+    if not os.path.exists(os.path.join(audio_folder, "vocals.srt")):
+        raise SystemError("whisper failed!")
+
     finnish = time.time()
-    print(f"whisper finnished (took {format_time(finnish - start)})")
+    print(f"whisper_transcript() was successfull! (took {format_time(finnish - start)})")
 
 
-def generate_video(uid):
+def generate_video(uid, debug=False):
+    print("generate_video() started!")
+    start = time.time()
+
     folder_path = os.path.join(data_folder, uid)
     subprocess.run(
         [
@@ -177,7 +208,7 @@ def generate_video(uid):
             "-vf",
             "gblur=sigma=20",  # Aplica desfoque gaussiano na imagem
             "-vf",
-            "subtitles=subtitles.srt",  # Insere a legenda no vídeo
+            "subtitles=vocals.srt",  # Insere a legenda no vídeo
             "-c:v",
             "libx264",  # Codec de vídeo
             "-tune",
@@ -194,18 +225,25 @@ def generate_video(uid):
         ],
         cwd=folder_path,
     )
-    subprocess.run(
-        [
-            "ffmpeg",
-            "-i",
-            "video.mp4",
-            "-vf",
-            "subtitles=subtitles.srt",  # Insere a legenda no vídeo
-            "-y",
-            "sub_video.mp4",
-        ],
-        cwd=folder_path,
-    )
+    if debug:
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-i",
+                "video.mp4",
+                "-vf",
+                "subtitles=vocals.srt",  # Insere a legenda no vídeo
+                "-y",
+                "sub_video.mp4",
+            ],
+            cwd=folder_path,
+        )
+
+    if not os.path.exists(os.path.join(data_folder, uid, "final_video.mp4")):
+        raise SystemError("ffmpeg failed!")
+
+    finnish = time.time()
+    print(f"generate_video() was successfull! (took {format_time(finnish - start)})")
 
 
 def cleanup(uid):
