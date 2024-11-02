@@ -10,6 +10,8 @@ function VideoPage() {
     const location = useLocation();
     const navigate = useNavigate();
     const { url } = location.state || {}; // recebe a url do video da rota /
+    const [uid, setUid] = useState('');
+    const [videoPath, setVideoPath] = useState('');
     const [videoInfo, setVideoInfo] = useState(null);
     const [isImageLoaded, setIsImageLoaded] = useState(false);
     const [loadingVideo, setLoadingVideo] = useState(false);
@@ -17,7 +19,6 @@ function VideoPage() {
     const [error, setError] = useState('');
     const eventSourceRef = useRef(null);
     const [videoGenerated, setVideoGenerated] = useState(false);
-    const [videoUrl, setVideoUrl] = useState('');
     const [startedProcessing, setStartedProcessing] = useState(false); // Para controlar quando o processo de karaoke começou
 
 
@@ -57,10 +58,10 @@ function VideoPage() {
         setStartedProcessing(true);
         setProgress(0);
         setError('');
-
         try {
+            var postData;
             // Solicita ao backend que inicie o processamento do vídeo
-            const response = await fetch('api/video/karaoke', {
+            const postResponse = await fetch('api/video/karaoke', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -68,38 +69,57 @@ function VideoPage() {
                 body: JSON.stringify({ url }),
             });
 
-            if (!response.ok) {
+            if (!postResponse.ok) {
                 throw new Error('Erro ao processar o vídeo.');
             }
+            else {
+                postData = await postResponse.json();
+                setUid(postData);
+            }
+            if (postData.videoPath == null) {
+                console.log("postData:");
+                console.log(postData);
+                // Cria a conexão SSE para receber atualizações de progresso em tempo real
+                console.log(`Connecting to EventSource(api/video/karaoke/${postData.uid})`);
+                const eventSource = new EventSource(`api/video/karaoke/${postData.uid}`);
+                eventSourceRef.current = eventSource;
+                eventSource.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    console.log("data:");
+                    console.log(data);
+                    const { progress, videoPath, error } = data;
+                    setVideoPath(videoPath);
 
-            // Cria a conexão SSE para receber atualizações de progresso em tempo real
-            const eventSource = new EventSource('api/video/karaoke');
-            eventSourceRef.current = eventSource;
-
-            eventSource.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                const { progress, videoUrl, error } = data;
-
-                if (error) {
-                    setError(error);
-                    eventSource.close();
-                    return;
-                }
-
-                if (typeof progress === 'number' && progress >= 0 && progress <= 100) {
-                    setProgress(progress); // Atualiza o estado da barra de progresso
-
-                    // Fecha a conexão SSE e configura o vídeo ao atingir 100% de progresso
-                    if (progress === 100) {
-                        setVideoGenerated(true);
-                        setVideoUrl(videoUrl); // URL recebida do backend
+                    if (error) {
+                        setError(error);
                         eventSource.close();
+                        return;
                     }
-                }
-            };
+
+                    if (typeof progress === 'number' && progress >= 0 && progress <= 100) {
+                        setProgress(progress); // Atualiza o estado da barra de progresso
+
+                        // Fecha a conexão SSE e configura o vídeo ao atingir 100% de progresso
+                        if (progress === 100) {
+                            setVideoGenerated(true);
+                            eventSource.close();
+                            setLoadingVideo(false);
+                        }
+                    }
+                };
+                eventSource.onerror = (event) => {
+                    console.error('EventSource failed:', event);
+                    eventSource.close(); // Close on error to prevent leaks
+                    setLoadingVideo(false);
+                };
+
+            }
+            else {
+                setVideoPath(postData.videoPath);
+                setVideoGenerated(true);
+            }
         } catch (error) {
             setError(error.message);
-        } finally {
             setLoadingVideo(false);
         }
     };
@@ -139,7 +159,7 @@ function VideoPage() {
                     <video
                         controls
                         className="w-full max-w-4xl h-auto rounded-lg"
-                        src={videoUrl}
+                        src={videoPath}
                         autoPlay
                     />
 

@@ -1,13 +1,21 @@
 import os, shutil, re, time, subprocess
+import numpy as np
+import pysrt
 import requests
 from pytubefix import YouTube
 import torch
 from faster_whisper import WhisperModel
+import librosa
+from pathlib import Path
 
-from models import VideoInfo
+device = "cuda" if torch.cuda.is_available() else "cpu"
+#device = "cpu"
+print("using", device)
 
-data_folder = "data"
+# see models here: https://github.com/SYSTRAN/faster-whisper
 
+#model = WhisperModel("distil-large-v2", device=device)
+model = WhisperModel("large-v2", device=device)
 
 def format_time(seconds):
     # Format time in seconds to SRT time format (HH:MM:SS,mmm)
@@ -44,9 +52,10 @@ def get_video_info(url):
 
         thumbnail = ""
         for option in thumbs_options:
-            response = requests.get(f"https://img.youtube.com/vi/{uid}/" + option)
+            url = f"https://img.youtube.com/vi/{uid}/" + option
+            response = requests.get(url)
             if response.status_code == 200:
-                thumbnail = f"https://img.youtube.com/vi/{uid}/maxresdefault.jpg"
+                thumbnail = url
                 break
 
         vd = YouTube(url)
@@ -66,7 +75,7 @@ def get_video_info(url):
         raise e("Error getting video id!")
 
 
-def get_video(url, debug=False):
+def get_video(url, data_folder):
     print("get_video() started")
     start = time.time()
     
@@ -76,16 +85,10 @@ def get_video(url, debug=False):
     if not os.path.exists(video_path):
         os.makedirs(video_path)
 
-    try:
-        vd = YouTube(url)
-        if debug:
-            stream_video = vd.streams.get_highest_resolution()
-            stream_video.download(output_path=video_path, filename="video.mp4")
+    vd = YouTube(url)
 
-        stream = vd.streams.filter(only_audio=True).first()
-        stream.download(output_path=video_path, filename="audio.mp3")
-    except Exception as e:
-        raise e("Error getting video info")
+    stream = vd.streams.filter(only_audio=True).first()
+    stream.download(output_path=video_path, filename="audio.mp3")
 
     thumbs_options = [
         "maxresdefault.jpg",
@@ -104,11 +107,12 @@ def get_video(url, debug=False):
 
             finnish = time.time()
             print(f"get_video() was successfull! (took {format_time(finnish - start)})")
+            return
         
     raise ConnectionError("Error downloading thumbnail!")
 
 
-def demucs_transcript(uid):
+def demucs_transcript(uid, data_folder):
     print("demucs_transcript() started")
     start = time.time()
 
@@ -134,7 +138,6 @@ def demucs_transcript(uid):
             os.remove(vocals)
         if os.path.exists(no_vocals):
             os.remove(no_vocals)
-
         shutil.move(os.path.join(demucs_folder, "audio", "vocals.wav"), audio_folder)
         shutil.move(os.path.join(demucs_folder, "audio", "no_vocals.wav"), audio_folder)
         shutil.rmtree(demucs_folder)
@@ -145,106 +148,125 @@ def demucs_transcript(uid):
     print(f"demucs_transcript() was successfull! (took {format_time(finnish - start)})")
 
 
-def whisper_transcript(uid, queue=None):
-    print("whisper_transcript() started!")
+def first_no_silence(audio_path):
+    audio, sr = librosa.load(audio_path, sr=44100)
+    audio_db = librosa.amplitude_to_db(audio, ref=np.max)
+
+    for i, db in enumerate(audio_db):
+        if db > -50:
+            return i/44100
+    
+
+def format_srt(subs_file):
+    subs = pysrt.open(subs_file)
+    for sub in subs:
+        frases = re.findall(r'\b(?!I\s|I\'m\s)([A-Z][^A-Z]*)', sub.text)
+        sub.text = '\n'.join(frase.strip() for frase in frases)
+    subs.save()
+
+
+def whisper_transcript(uid, data_folder, queue=None):
+    print("whisper_transcript() started")
     start = time.time()
 
     audio_folder = os.path.join(data_folder, uid)
-
     audio_path = os.path.join(audio_folder, "vocals.wav")
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print("using", device)
+    if not os.path.exists(audio_path) or os.path.getsize(audio_path) == 0:
+        print(f"Audio file not found or empty: {audio_path}")
+        return
 
-    model = WhisperModel("large-v3", device=device)
+    first_sub = first_no_silence(audio_path)
+
     language_info = model.detect_language_multi_segment(audio_path)
-    segments, _ = model.transcribe(
-        audio_path, beam_size=5, language=language_info["language_code"]
+    language = language_info["language_code"]
+    segments, info = model.transcribe(
+        audio_path, beam_size=5, language=language
     )
-    print(
-        "Detected language '%s' with probability %f"
-        % (language_info["language_code"], language_info["language_confidence"])
-    )
+
+    print(f"Detected language {language} with probability {language_info["language_confidence"]}")
 
     with open(os.path.join(audio_folder, "vocals.srt"), "w", encoding="utf-8") as f:
+        total_duration = round(info.duration, 2)
+        curr_duration = 0
         for i, segment in enumerate(segments):
-            progress = i/len(segments) * 100
+            curr_duration += segment.end - segment.start
+            progress = int((curr_duration / total_duration) * 100)
             if queue is not None:
                 queue.put(progress)
-            print(f"Progress: {progress}%")
-            # print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
-            # Write the index
-            f.write(f"{i + 1}\n")
 
-            # Format and write the timecodes
-            start_time = format_time(segment.start)
+            f.write(f"{i + 1}\n")
+            if i == 0:
+                start_time = format_time(first_sub)
+            else:
+                start_time = format_time(segment.start)
             end_time = format_time(segment.end)
             f.write(f"{start_time} --> {end_time}\n")
-
-            # Write the text
             f.write(f"{segment.text}\n\n")
 
-    if not os.path.exists(os.path.join(audio_folder, "vocals.srt")):
+    subs_file = os.path.join(audio_folder, "vocals.srt")
+    if not os.path.exists(subs_file):
         raise SystemError("whisper failed!")
+    
+    # formating the .srt, so the subs can be visibly better
+    format_srt(subs_file)
 
+    progress = 100
+    if queue is not None:
+        queue.put(progress)
     finnish = time.time()
-    print(f"whisper_transcript() was successfull! (took {format_time(finnish - start)})")
+    print(f"whisper_transcript() was successful! (took {format_time(finnish - start)})")
 
 
-def generate_video(uid, debug=False):
-    print("generate_video() started!")
+def generate_video(uid, data_folder, debug=False):
+    print("generate_video() started")
     start = time.time()
 
-    folder_path = os.path.join(data_folder, uid)
+    output_path = os.path.join(data_folder, uid)
     subprocess.run(
         [
             "ffmpeg",
-            "-loop",
-            "1",  # Repete a imagem
-            "-i",
-            "thumbnail.jpg",  # Imagem de entrada
-            "-i",
-            "no_vocals.wav",  # Áudio de entrada
-            "-vf",
-            "gblur=sigma=20",  # Aplica desfoque gaussiano na imagem
-            "-vf",
-            "subtitles=vocals.srt",  # Insere a legenda no vídeo
-            "-c:v",
-            "libx264",  # Codec de vídeo
-            "-tune",
-            "stillimage",  # Ajuste para imagens estáticas
-            "-c:a",
-            "aac",  # Codec de áudio
-            "-b:a",
-            "192k",  # Taxa de bits do áudio
-            "-pix_fmt",
-            "yuv420p",  # Formato de pixel
-            "-shortest",  # Faz com que o vídeo tenha a duração do áudio
+            "-loop", "1",
+            "-i", "thumbnail.jpg", 
+            "-i", "no_vocals.wav", 
+            "-vf", "gblur=sigma=20,subtitles=vocals.srt",
+            "-shortest",
             "-y",
             "final_video.mp4",
         ],
-        cwd=folder_path,
+        cwd=output_path,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
     if debug:
         subprocess.run(
             [
-                "ffmpeg",
-                "-i",
-                "video.mp4",
-                "-vf",
-                "subtitles=vocals.srt",  # Insere a legenda no vídeo
-                "-y",
-                "sub_video.mp4",
-            ],
-            cwd=folder_path,
+            "ffmpeg",
+            "-loop", "1",
+            "-i", "thumbnail.jpg",
+            "-i", "audio.mp3", 
+            "-vf", "gblur=sigma=20,subtitles=vocals.srt",
+            "-shortest",
+            "-y",
+            "final_video_debug.mp4",
+        ],
+        cwd=output_path,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
         )
 
-    if not os.path.exists(os.path.join(data_folder, uid, "final_video.mp4")):
+    final_video_path = Path(output_path) / "final_video.mp4"
+    if not final_video_path.exists():
         raise SystemError("ffmpeg failed!")
 
     finnish = time.time()
     print(f"generate_video() was successfull! (took {format_time(finnish - start)})")
 
 
-def cleanup(uid):
-    no_delete = []
+def cleanup(uid, data_folder):
+    no_delete = ["final_video.mp4", "final_video_debug.mp4"]
+    folder = os.path.join(data_folder, uid)
+    for file in os.listdir(folder):
+        file_path = os.path.join(data_folder, file)
+        if os.path.isfile(file_path) and file not in no_delete:
+            os.remove(file_path)
