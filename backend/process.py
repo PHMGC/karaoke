@@ -265,8 +265,8 @@ def generate_video(uid, data_folder, debug=False):
 
 def cleanup(uid, data_folder):
     no_delete = ["final_video.mp4", "final_video_debug.mp4"]
-    folder = os.path.join(data_folder, uid)
-    for file in os.listdir(folder):
-        file_path = os.path.join(data_folder, file)
+    video_folder = os.path.join(data_folder, uid)
+    for file in os.listdir(video_folder):
+        file_path = os.path.join(video_folder, file)
         if os.path.isfile(file_path) and file not in no_delete:
             os.remove(file_path)

@@ -51,7 +51,6 @@ def karaoke_route():
             thread.start()
             return Response(json.dumps({"uid": uid, "videoPath": None}))
         else:
-            #video_path = os.path.abspath(os.path.join(data_folder, uid, "final_video.mp4"))
             video_path = f"/api/video/karaoke/{uid}/video"
             return Response(json.dumps({"uid": uid, "videoPath": video_path}))
     
@@ -64,7 +63,6 @@ def karaoke_progress(uid=None):
     print(f"Received UID: {uid}")
     if not uid:
         return jsonify({"error": "UID is required"}), 400
-    #video_path = os.path.abspath(os.path.join(data_folder, uid, "final_video.mp4"))
     video_path = f"/api/video/karaoke/{uid}/video" 
     def generate():
         while True:
@@ -113,6 +111,7 @@ def karaoke_process(url):
             except queue.Empty:
                 break
         whisper_thread.join()
+        progress_data[uid] = 75
         generate_video(uid, data_folder)
         progress_data[uid] = 100
 
@@ -122,7 +121,7 @@ def karaoke_process(url):
             infodb = VideoInfo(uid=uid, title=info["title"], channel=info["channel"], duration=info["duration"])
             db.session.add(infodb)
             db.session.commit()
-            
+
         cleanup(uid, data_folder)
 
 
