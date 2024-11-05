@@ -1,9 +1,9 @@
 # KaraokeTube
 This project is a prototype of a website that generates a karaoke version of a YouTube video by removing the background audio and automatically adding subtitles. It uses Demucs to separate the voices from the background sound and Whisper to transcribe the subtitles.
 
-It uses Flask for the backend application, and React for the website frontend.
+It uses Flask for the backend application, SQL-Alchemy for its database, and React for the website frontend.
 
-Made by Gustavo Luiz (Frontend) and Pedro Cortez(Backend)
+**Made by Gustavo Luiz (Frontend) and Pedro Cortez (Backend).**
 
 # Usage
 First, clone the repository
