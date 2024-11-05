@@ -1,4 +1,4 @@
-# KaraokeTube
+# KaraokeTube, by Gustavo Luiz and Pedro Cortez
 This project is a prototype of a website that generates a karaoke version of a YouTube video by removing the background audio and automatically adding subtitles. It uses Demucs to separate the voices from the background sound and Whisper to transcribe the subtitles.
 
 # Usage
