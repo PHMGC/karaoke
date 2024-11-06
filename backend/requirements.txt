@@ -1,0 +1,11 @@
+flask
+numpy
+pysrt
+requests
+pytubefix
+torch
+faster-whisper @ git+https://github.com/SYSTRAN/faster-whisper.git@master
+librosa
+flask-sqlalchemy
+flask-cors
+flask-admin

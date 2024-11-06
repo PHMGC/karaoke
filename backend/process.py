@@ -1,4 +1,8 @@
-import os, shutil, re, time, subprocess
+import os
+import shutil
+import re
+import time
+import subprocess
 import numpy as np
 import pysrt
 import requests
@@ -9,13 +13,14 @@ import librosa
 from pathlib import Path
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-#device = "cpu"
-print("using", device)
+# device = "cpu"
+print("Whisper is using", device)
 
 # see models here: https://github.com/SYSTRAN/faster-whisper
 
-#model = WhisperModel("distil-large-v2", device=device)
+# model = WhisperModel("distil-large-v2", device=device)
 model = WhisperModel("large-v2", device=device)
+
 
 def format_time(seconds):
     # Format time in seconds to SRT time format (HH:MM:SS,mmm)
@@ -62,7 +67,8 @@ def get_video_info(url):
         title = vd.title
         channel = vd.author
         h, m, s = vd.length // 3600, (vd.length % 3600) // 60, vd.length % 60
-        duration = f"{h}:{m:02}:{s:02}" if h else (f"{m}:{s:02}" if m else f"{s}s")
+        duration = f"{h}:{m:02}:{s:02}" if h else (
+            f"{m}:{s:02}" if m else f"{s}s")
         return {
             "uid": uid,
             "title": title,
@@ -78,7 +84,7 @@ def get_video_info(url):
 def get_video(url, data_folder):
     print("get_video() started")
     start = time.time()
-    
+
     uid = extract_uid(url)
 
     video_path = os.path.join(data_folder, uid)
@@ -98,7 +104,6 @@ def get_video(url, data_folder):
         "default.jpg",
     ]
 
-
     for option in thumbs_options:
         response = requests.get(f"https://img.youtube.com/vi/{uid}/" + option)
         if response.status_code == 200:
@@ -106,9 +111,10 @@ def get_video(url, data_folder):
                 f.write(response.content)
 
             finnish = time.time()
-            print(f"get_video() was successfull! (took {format_time(finnish - start)})")
+            print(f"get_video() was successfull! (took {
+                  format_time(finnish - start)})")
             return
-        
+
     raise ConnectionError("Error downloading thumbnail!")
 
 
@@ -138,14 +144,17 @@ def demucs_transcript(uid, data_folder):
             os.remove(vocals)
         if os.path.exists(no_vocals):
             os.remove(no_vocals)
-        shutil.move(os.path.join(demucs_folder, "audio", "vocals.wav"), audio_folder)
-        shutil.move(os.path.join(demucs_folder, "audio", "no_vocals.wav"), audio_folder)
+        shutil.move(os.path.join(demucs_folder, "audio",
+                    "vocals.wav"), audio_folder)
+        shutil.move(os.path.join(demucs_folder, "audio",
+                    "no_vocals.wav"), audio_folder)
         shutil.rmtree(demucs_folder)
     else:
         raise SystemError("demucs failed!")
-    
+
     finnish = time.time()
-    print(f"demucs_transcript() was successfull! (took {format_time(finnish - start)})")
+    print(f"demucs_transcript() was successfull! (took {
+          format_time(finnish - start)})")
 
 
 def first_no_silence(audio_path):
@@ -155,7 +164,7 @@ def first_no_silence(audio_path):
     for i, db in enumerate(audio_db):
         if db > -50:
             return i/44100
-    
+
 
 def format_srt(subs_file):
     subs = pysrt.open(subs_file)
@@ -184,7 +193,8 @@ def whisper_transcript(uid, data_folder, queue=None):
         audio_path, beam_size=5, language=language
     )
 
-    print(f"Detected language {language} with probability {language_info["language_confidence"]}")
+    print(f"Detected language {language} with probability {
+          language_info["language_confidence"]}")
 
     with open(os.path.join(audio_folder, "vocals.srt"), "w", encoding="utf-8") as f:
         total_duration = round(info.duration, 2)
@@ -207,7 +217,7 @@ def whisper_transcript(uid, data_folder, queue=None):
     subs_file = os.path.join(audio_folder, "vocals.srt")
     if not os.path.exists(subs_file):
         raise SystemError("whisper failed!")
-    
+
     # formating the .srt, so the subs can be visibly better
     format_srt(subs_file)
 
@@ -215,7 +225,8 @@ def whisper_transcript(uid, data_folder, queue=None):
     if queue is not None:
         queue.put(progress)
     finnish = time.time()
-    print(f"whisper_transcript() was successful! (took {format_time(finnish - start)})")
+    print(f"whisper_transcript() was successful! (took {
+          format_time(finnish - start)})")
 
 
 def generate_video(uid, data_folder, debug=False):
@@ -227,8 +238,8 @@ def generate_video(uid, data_folder, debug=False):
         [
             "ffmpeg",
             "-loop", "1",
-            "-i", "thumbnail.jpg", 
-            "-i", "no_vocals.wav", 
+            "-i", "thumbnail.jpg",
+            "-i", "no_vocals.wav",
             "-vf", "gblur=sigma=20,subtitles=vocals.srt",
             "-shortest",
             "-y",
@@ -241,18 +252,18 @@ def generate_video(uid, data_folder, debug=False):
     if debug:
         subprocess.run(
             [
-            "ffmpeg",
-            "-loop", "1",
-            "-i", "thumbnail.jpg",
-            "-i", "audio.mp3", 
-            "-vf", "gblur=sigma=20,subtitles=vocals.srt",
-            "-shortest",
-            "-y",
-            "final_video_debug.mp4",
-        ],
-        cwd=output_path,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+                "ffmpeg",
+                "-loop", "1",
+                "-i", "thumbnail.jpg",
+                "-i", "audio.mp3",
+                "-vf", "gblur=sigma=20,subtitles=vocals.srt",
+                "-shortest",
+                "-y",
+                "final_video_debug.mp4",
+            ],
+            cwd=output_path,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
 
     final_video_path = Path(output_path) / "final_video.mp4"
@@ -260,7 +271,8 @@ def generate_video(uid, data_folder, debug=False):
         raise SystemError("ffmpeg failed!")
 
     finnish = time.time()
-    print(f"generate_video() was successfull! (took {format_time(finnish - start)})")
+    print(f"generate_video() was successfull! (took {
+          format_time(finnish - start)})")
 
 
 def cleanup(uid, data_folder):

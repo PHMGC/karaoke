@@ -3,7 +3,7 @@ This project is a prototype of a website that generates a karaoke version of a Y
 
 It uses Flask for the backend application, SQL-Alchemy for its database, and React for the website frontend.
 
-**Made by Gustavo Luiz (Frontend) and Pedro Cortez (Backend).**
+**Made by Gustavo Luiz and Pedro Cortez.**
 
 # Usage
 First, clone the repository
@@ -22,44 +22,59 @@ cd backend
 ## Requirements
 
 * Python 3.8 or greater (if not installed, you can download it here: https://www.python.org/downloads)
+
 * Ffmpeg (if not installed, you can download it here: https://www.ffmpeg.org/download.html)
-* Environment with CUDA support is recommended for better performance (optional).
 
-This repository contains an python venv, with all dependencies already installed.
-However, if you prefer, you can install all other dependencies on your machine using the command below:
+
+* All dependencies from this project can be installed running:
 ```bash
-python pip install --force-reinstall -r requirements.txt
+pip install --force-reinstall -r requirements.txt
 ```
-
-## Configuration
-
-If you are using the virtual enviroment:
-On Windows:
+* If you prefer to install them locally, you can create a python virtual enviroment:
+```bash
+python -m venv venv
+```
+>> To start the venv
+>On Windows:
 ```bash
 .\venv\Scripts\activate
 ```
-On Linux/macOS:
+>On Linux/macOS:
 ```bash
 source venv/bin/activate
 ```
+
+>Then run:
+```bash
+pip install --force-reinstall -r requirements.txt
+```
+to install the dependencies.
+
+>And to exit:
+```bash
+deactivate
+```
+
+* Environment with CUDA support is recommended for better performance (optional).
+If your system supports it, install the package:
+(change the url end number to your CUDA version - in this sample, the CUDA version is 124)
+```bash
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+```
+
 ## Run Backend
 ```bash
 python main.py
 ```
 This command will start the backend, and will wait for request sent from the frontend.
 
-When requested, demucs, whisper and ffmepg will process the data and return the finnshed video
+When requested, demucs, whisper and ffmepg will process the data and return the finnshed video.
 
 ## Exit
 If you want to close the backend application, type on console:
 ```bash
 CTRL + C
 ```
-And, if you are using venv, type on console:
-```bash
-deactivate
-```
-To close the virtual environment.
 
 ## Project Structure
 * process.py: Audio and subtitle processing, including audio extraction and transcription.
