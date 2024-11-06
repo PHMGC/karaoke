@@ -34,13 +34,13 @@ pip install --force-reinstall -r requirements.txt
 ```bash
 python -m venv venv
 ```
->> To start the venv
+> To start the venv
 
->On Windows:
+* On Windows:
 ```bash
 .\venv\Scripts\activate
 ```
->On Linux/macOS:
+* On Linux/macOS:
 ```bash
 source venv/bin/activate
 ```
