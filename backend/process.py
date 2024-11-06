@@ -42,10 +42,15 @@ def extract_uid(url):
         return None
 
 
-def get_video_info(url):
-    uid = extract_uid(url)
-    if uid is None:
-        return None
+def get_video_info_uid(uid):
+    return get_video_info("https://www.youtube.com/watch?v=" + uid)
+
+
+def get_video_info(url, uid=None):
+    if not uid:
+        uid = extract_uid(url)
+        if uid is None:
+            return None
     try:
         thumbs_options = [
             "maxresdefault.jpg",

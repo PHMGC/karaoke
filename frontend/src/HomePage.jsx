@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState} from 'react';
 import { useNavigate } from 'react-router-dom'; // Correção na importação
 import { FaSearch } from 'react-icons/fa'; // Ícone de lupa
 import Carousel from './Carousel';
@@ -11,7 +11,6 @@ function HomePage() {
     const [url, setUrl] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
-    const videosNoBD = 3; // Recebe do DB o número de vídeos salvos.
 
     // Função de validação para checar se é um URL válido do YouTube
     const isValidYouTubeUrl = (url) => {
@@ -38,12 +37,12 @@ function HomePage() {
         <div className="min-h-screen flex flex-col font-jetbrains">
 
             {/* HEADER */}
-            <header className="p-4 flex items-center">
-                <img src="/icone.png" alt="Microphone" className="h-8 w-8 mr-2" />
-                <h1 className="text-2xl font-bold">FeudoKe</h1> {/* Título do site */}
+            <header className="p-4 flex items-center z-10">
+                <img onClick={()=>navigate("/")} src="/icone.png" alt="Microphone" className="h-8 w-8 mr-2 hover:cursor-pointer" />
+                <h1  onClick={()=>navigate("/")} className="text-2xl font-bold hover:cursor-pointer">KaraokeTube</h1> {/* Título do site */}
             </header>
 
-            <div className={`flex ${videosNoBD > 2 ? 'flex-grow-[5] items-end' : 'flex-grow items-center'} justify-center pb-6 mt-[-10%]`}>
+            <div className={`flex ${'flex-grow-[5] items-end'} justify-center pb-6 mt-[-10%]`}>
                 <div className="w-1/2 max-w-lg">
                     <form onSubmit={handleSubmit} className="relative">
                         <input
@@ -65,9 +64,9 @@ function HomePage() {
                 </div>
             </div>
 
-            {(videosNoBD >= 2) && <div className="flex-grow-[1] flex justify-center items-center p-12">
+            <div className="flex-grow-[1] flex justify-center items-center p-12">
                 <Carousel />
-            </div>}
+            </div>
 
             <footer className='flex items-center justify-center pb-2'>
                 <span className="text-sm">© {new Date().getFullYear()} | Gustavo Ribeiro & Pedro Cortez</span>

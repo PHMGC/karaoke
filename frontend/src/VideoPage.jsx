@@ -149,9 +149,9 @@ function VideoPage() {
     // ---------------------------------------------------------------------------------------------
     return (
         <div className="min-h-screen flex flex-col font-jetbrains">
-            <header className="p-4 flex items-center">
-                <img src="/icone.png" alt="Microphone" className="h-8 w-8 mr-2" />
-                <h1 className="text-2xl font-bold">FeudoKe</h1>
+            <header className="p-4 flex items-center z-10">
+                <img onClick={()=>navigate("/")} src="/icone.png" alt="Microphone" className="h-8 w-8 mr-2" />
+                <h1 onClick={()=>navigate("/")} className="text-2xl font-bold">KaraokeTube</h1>
             </header>
 
             {videoGenerated ? (
