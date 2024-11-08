@@ -54,7 +54,7 @@ to install the dependencies.
 * Environment with CUDA support is recommended for better performance (optional).
 To check if your system supports it, run:
 ```bash
-py -c "import torch; print(torch.version.cuda if torch.cuda.is_available() else "CUDA not available")"
+py -c "import torch; print(torch.version.cuda if torch.cuda.is_available() else 'CUDA not available')"
 ```
 And, to install, run this command (change the url end number to your CUDA version, without dots)
 ```bash
