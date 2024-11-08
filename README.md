@@ -54,7 +54,7 @@ to install the dependencies.
 * Environment with CUDA support is recommended for better performance (optional).
 To install it, run:
 ```bash
-py cuda.py
+python cuda.py
 ```
 This code will try to automatically install the latest PyTorch compatible with your CUDA version.
 
@@ -71,7 +71,7 @@ If you want to close the backend application, type on console:
 ```bash
 CTRL + C
 ```
->If you chose to use the virtual enviroment, you can exit with:
+If you chose to use the virtual enviroment, you can exit with:
 ```bash
 deactivate
 ```
