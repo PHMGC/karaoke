@@ -28,6 +28,7 @@ def processtest(url=None):
     demucs_transcript(uid, data_folder)
     whisper_transcript(uid, data_folder)
     generate_video(uid, data_folder, True)
+    cleanup(uid, data_folder)
 
 
 def updatedb():
@@ -57,3 +58,5 @@ if __name__ == "__main__":
                 updatedb()
         else:
             print("wrong args")
+    else:
+        print("no args given")

@@ -77,16 +77,16 @@ function VideoPage() {
                 setUid(postData);
             }
             if (postData.videoPath == null) {
-                console.log("postData:");
-                console.log(postData);
+                //console.log("postData:");
+                //console.log(postData);
                 // Cria a conexão SSE para receber atualizações de progresso em tempo real
-                console.log(`Connecting to EventSource(api/video/karaoke/${postData.uid})`);
+                //console.log(`Connecting to EventSource(api/video/karaoke/${postData.uid})`);
                 const eventSource = new EventSource(`api/video/karaoke/${postData.uid}`);
                 eventSourceRef.current = eventSource;
                 eventSource.onmessage = (event) => {
                     const data = JSON.parse(event.data);
-                    console.log("data:");
-                    console.log(data);
+                    //console.log("data:");
+                    //console.log(data);
                     const { progress, videoPath, error } = data;
                     setVideoPath(videoPath);
 
@@ -138,7 +138,7 @@ function VideoPage() {
             },
           });
           if (response.ok) {
-            //console.log('Vídeo deletado');
+            ////console.log('Vídeo deletado');
           }
         } catch (error) {
           console.error('Erro ao deletar o vídeo:', error);

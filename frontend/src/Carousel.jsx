@@ -94,7 +94,7 @@ const Carousel = () => {
 
     const items = Array.from({ length: 10 }, (_, index) => ({
         id: index + 1,
-        image: 'https://img.youtube.com/vi/Qz52N7gsths/maxresdefault.jpg',
+        thumbnail: 'https://img.youtube.com/vi/Qz52N7gsths/maxresdefault.jpg',
         title: '',
         subTitle: '',
     }));
@@ -108,7 +108,7 @@ const Carousel = () => {
                 {items.map((item) => (
                     <div key={item.id} className="flex flex-col items-center p-4 hover:cursor-pointer outline-none">
                         <div className="w-full aspect-video">
-                            <img src={item.image} alt={item.title} className="w-full h-full object-cover rounded-md" />
+                            <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover rounded-md" />
                         </div>
                         <p className="text-black text-[11px] md:text-[13px] xl:text-[16px] font-bold text-center">{item.title}</p>
                         <p className="text-gray-800 text-[10px] md:text-[13px] xl:text-[14px] text-center">{item.subTitle}</p>
@@ -121,7 +121,7 @@ const Carousel = () => {
                     <div onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={() => handleMouseUp(item.uid)}
                      key={item.uid} className="flex flex-col items-center p-4 hover:cursor-pointer outline-none">
                         <div className="w-full aspect-video">
-                            <img src={item.image} alt={item.title} className="w-full h-full object-cover rounded-md" />
+                            <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover rounded-md" />
                         </div>
                         <p className="text-black text-[11px] md:text-[13px] xl:text-[16px] font-bold  text-center">{item.title}</p>
                         <p className="text-gray-800 text-[10px] md:text-[13px] xl:text-[14px]  text-center">{item.subTitle}</p>
