@@ -24,9 +24,9 @@ const Carousel = () => {
         setDragging(true); // If the mouse moves, set dragging to true
       };
     
-      const handleMouseUp = (id) => {
+      const handleMouseUp = async (id) => {
         if (!dragging ) {
-          //navigate(`/video`);
+            navigate(`/video`);
         }
       };
 
@@ -95,8 +95,8 @@ const Carousel = () => {
     const items = Array.from({ length: 10 }, (_, index) => ({
         id: index + 1,
         image: 'https://img.youtube.com/vi/Qz52N7gsths/maxresdefault.jpg',
-        title: `what was i made for - billie eilish`,
-        subTitle: index + 1
+        title: '',
+        subTitle: '',
     }));
 
     const sliderItems = carouselData && dbVideos >= 10 ? carouselData : items;
@@ -107,8 +107,10 @@ const Carousel = () => {
             <Slider {...settings}>
                 {items.map((item) => (
                     <div key={item.id} className="flex flex-col items-center p-4 hover:cursor-pointer outline-none">
-                        <img src={item.image} alt={item.title} className="w-full max-h-40 object-cover rounded-md mb-2" />
-                        <p className="text-black text-[11px] md:text-[13px] xl:text-[16px] font-bold  text-center">{item.title}</p>
+                        <div className="w-full aspect-video">
+                            <img src={item.image} alt={item.title} className="w-full h-full object-cover rounded-md" />
+                        </div>
+                        <p className="text-black text-[11px] md:text-[13px] xl:text-[16px] font-bold text-center">{item.title}</p>
                         <p className="text-gray-800 text-[10px] md:text-[13px] xl:text-[14px] text-center">{item.subTitle}</p>
                     </div>
                 ))}
@@ -118,16 +120,15 @@ const Carousel = () => {
                 {sliderItems.map((item) => (
                     <div onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={() => handleMouseUp(item.uid)}
                      key={item.uid} className="flex flex-col items-center p-4 hover:cursor-pointer outline-none">
-                        <img src={item.thumbnail} alt={item.title} className="w-full max-h-36 object-cover rounded-md mb-2" />
+                        <div className="w-full aspect-video">
+                            <img src={item.image} alt={item.title} className="w-full h-full object-cover rounded-md" />
+                        </div>
                         <p className="text-black text-[11px] md:text-[13px] xl:text-[16px] font-bold  text-center">{item.title}</p>
                         <p className="text-gray-800 text-[10px] md:text-[13px] xl:text-[14px]  text-center">{item.subTitle}</p>
                     </div>
                 ))}
             </Slider>
             }
-            <div className=''>
-
-            </div>
         </div>
     );
 };
