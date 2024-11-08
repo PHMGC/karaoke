@@ -52,14 +52,11 @@ pip install -r requirements.txt
 to install the dependencies.
 
 * Environment with CUDA support is recommended for better performance (optional).
-To check if your system supports it, run:
+To install it, run:
 ```bash
-py -c "import torch; print(torch.version.cuda if torch.cuda.is_available() else 'CUDA not available')"
+py cuda.py"
 ```
-And, to install, run this command (change the url end number to your CUDA version, without dots)
-```bash
-pip install --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/{your_CUDA_version}
-```
+This code will try to automatically install the latest PyTorch compatible with your CUDA version.
 
 ## Run Backend
 ```bash
