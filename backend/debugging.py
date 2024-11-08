@@ -20,7 +20,9 @@ url8 = "https://www.youtube.com/watch?v=doLMt10ytHY"  # es/jap
 data_folder = "data"
 
 
-def debug_process(url):
+def processtest(url=None):
+    if not url:
+        url = url2
     uid = extract_uid(url)
     get_video(url, data_folder)
     demucs_transcript(uid, data_folder)
@@ -28,7 +30,7 @@ def debug_process(url):
     generate_video(uid, data_folder, True)
 
 
-def update_db():
+def updatedb():
     with app.app_context():
         print("updating db")
 
@@ -46,9 +48,12 @@ def update_db():
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        if sys.argv[1] == "debug_process":
-            debug_process()
-        elif sys.argv[1] == "update_db":
-            update_db()
+        if sys.argv[1] == "processtest":
+            processtest()
+        elif sys.argv[1] == "updatedb":
+            if sys.argv[2]:
+                updatedb(sys.argv[2])
+            else:
+                updatedb()
         else:
             print("wrong args")

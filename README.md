@@ -76,6 +76,20 @@ CTRL + C
 deactivate
 ```
 
+## Debugging
+* If you want to test if the video processing is working, you can run
+```bash
+python debugging.py processtest
+```
+Or to test a certain url
+```bash
+python debugging.py processtest <url>
+```
+* If you want to update the database, run:
+```bash
+python debugging.py updatedb
+```
+
 ## Project Structure
 * process.py: Audio and subtitle processing, including audio extraction and transcription.
 * main.py: Runs the backend's app.
