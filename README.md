@@ -64,7 +64,7 @@ python main.py
 ```
 This command will start the backend, and will wait for request sent from the frontend.
 
-When requested, demucs, whisper and ffmepg will process the data and return the finnshed video.
+When requested, demucs, whisper and ffmepg will process the data and return the finnished video.
 
 ## Exit
 If you want to close the backend application, type on console:
