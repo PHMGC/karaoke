@@ -150,28 +150,29 @@ function VideoPage() {
     return (
         <div className="min-h-screen flex flex-col font-jetbrains">
             <header className="p-4 flex items-center z-10">
-                <img onClick={()=>navigate("/")} src="/icone.png" alt="Microphone" className="h-8 w-8 mr-2" />
-                <h1 onClick={()=>navigate("/")} className="text-2xl font-bold">KaraokeTube</h1>
+                <img onClick={()=>navigate("/")} src="/icone.png" alt="Microphone" className="h-8 w-8 mr-2 hover:cursor-pointer" />
+                <h1 onClick={()=>navigate("/")} className="text-2xl font-bold hover:cursor-pointer">KaraokeTube</h1>
             </header>
 
             {videoGenerated ? (
                 <div className="flex-grow flex flex-col justify-center items-center">
                     <video
                         controls
-                        className="w-full max-w-4xl h-auto rounded-lg"
+                        className="w-full max-w-[320px] sm:max-w-lg lg:max-w-4xl h-auto rounded-lg p-2"
                         src={videoPath}
-                        autoPlay
+                        //autoPlay
                     />
-
+                    <p className='px-2 text-[10px] sm:text-[12px] lg:text-[16px] text-center text-gray-500'>Disclaimer: This subtitles are AI-generated and may not be 100% accurate.</p>
                     <button
-                        className="mt-4 p-2 bg-gray-300 text-black rounded hover:bg-gray-400"
+                        className="text-[10px] sm:text-[12px] lg:text-[16px] mt-4 p-2
+                         bg-gray-300 text-black rounded hover:bg-gray-400"
                         onClick={handleDeleteVideo} // Retorna a pagina anterior
                     >
                         Voltar
                     </button>
                 </div>
             ) : (
-                <div className="flex-grow flex flex-col md:flex-row p-8 justify-center items-center mt-[-5%]">
+                <div className="gap-2 flex-grow flex flex-col lg:flex-row p-8 justify-center items-center mt-[-5%]">
                     <div className="flex-1 flex justify-center items-center mb-6 md:mb-0">
                         {videoInfo ? (
                             <img
@@ -241,7 +242,7 @@ function VideoPage() {
                 </div>
             )}
             <footer className='flex items-center justify-center pb-2'>
-                <span className=" text-[.78rem] sm:text-sm">© {new Date().getFullYear()} | Gustavo Ribeiro & Pedro Cortez</span>
+                <span className=" px-2 text-center text-[10px] sm:text-[12px] lg:text-[16px]">© {new Date().getFullYear()} | Gustavo Ribeiro & Pedro Cortez</span>
             </footer>
         </div>
     );

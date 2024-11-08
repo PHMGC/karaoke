@@ -64,7 +64,8 @@ function HomePage() {
                 </div>
             </div>
 
-            <div className="flex-grow-[1] flex justify-center items-center p-12">
+            <div className="flex-grow-[1] flex flex-col justify-center items-center p-12">
+                <p className='pb-4 text-center text-xl text-black'>Top 10</p>
                 <Carousel />
             </div>
 
