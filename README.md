@@ -34,28 +34,31 @@ pip install -r requirements.txt
 ```bash
 python -m venv venv
 ```
-> To start the venv
+To start the venv
 
-* On Windows:
+> On Windows:
 ```bash
 .\venv\Scripts\activate
 ```
-* On Linux/macOS:
+> On Linux/macOS:
 ```bash
 source venv/bin/activate
 ```
 
->Then run:
+Then run:
 ```bash
 pip install -r requirements.txt
 ```
 to install the dependencies.
 
 * Environment with CUDA support is recommended for better performance (optional).
-If your system supports it, install the package:
-(change the url end number to your CUDA version - in this sample, the CUDA version is 124)
+To check if your system supports it, run:
 ```bash
-pip install --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+py -c "import torch; print(torch.version.cuda if torch.cuda.is_available() else "CUDA not available")"
+```
+And, to install, run this command (change the url end number to your CUDA version, without dots)
+```bash
+pip install --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/{your_CUDA_version}
 ```
 
 ## Run Backend
