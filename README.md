@@ -54,7 +54,7 @@ to install the dependencies.
 * Environment with CUDA support is recommended for better performance (optional).
 To install it, run:
 ```bash
-py cuda.py"
+py cuda.py
 ```
 This code will try to automatically install the latest PyTorch compatible with your CUDA version.
 
