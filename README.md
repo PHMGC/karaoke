@@ -28,7 +28,7 @@ cd backend
 
 * All dependencies from this project can be installed running:
 ```bash
-pip install --force-reinstall -r requirements.txt
+pip install -r requirements.txt
 ```
 * If you prefer to install them locally, you can create a python virtual enviroment:
 ```bash
@@ -47,7 +47,7 @@ source venv/bin/activate
 
 >Then run:
 ```bash
-pip install --force-reinstall -r requirements.txt
+pip install -r requirements.txt
 ```
 to install the dependencies.
 
@@ -60,7 +60,7 @@ deactivate
 If your system supports it, install the package:
 (change the url end number to your CUDA version - in this sample, the CUDA version is 124)
 ```bash
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+pip install --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 ```
 
 ## Run Backend
