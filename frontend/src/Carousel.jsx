@@ -26,7 +26,7 @@ const Carousel = () => {
     
       const handleMouseUp = (id) => {
         if (!dragging ) {
-          navigate(`/video`);
+          //navigate(`/video`);
         }
       };
 
@@ -34,6 +34,7 @@ const Carousel = () => {
     useEffect(() => {
 
         const fetchCarouselData = async () => {
+            console.log("inciou")
             try {
                 const response = await fetch('api/carousel');
                 if (!response.ok) {
@@ -106,7 +107,7 @@ const Carousel = () => {
             <Slider {...settings}>
                 {items.map((item) => (
                     <div key={item.id} className="flex flex-col items-center p-4 hover:cursor-pointer outline-none">
-                        <img src={item.image} alt={item.title} className="w-full max-h-48 object-cover rounded-md mb-2" />
+                        <img src={item.image} alt={item.title} className="w-full max-h-40 object-cover rounded-md mb-2" />
                         <p className="text-black text-[11px] md:text-[13px] xl:text-[16px] font-bold  text-center">{item.title}</p>
                         <p className="text-gray-800 text-[10px] md:text-[13px] xl:text-[14px] text-center">{item.subTitle}</p>
                     </div>
@@ -117,7 +118,7 @@ const Carousel = () => {
                 {sliderItems.map((item) => (
                     <div onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={() => handleMouseUp(item.uid)}
                      key={item.uid} className="flex flex-col items-center p-4 hover:cursor-pointer outline-none">
-                        <img src={item.thumbnail} alt={item.title} className="w-full max-h-48 object-cover rounded-md mb-2" />
+                        <img src={item.thumbnail} alt={item.title} className="w-full max-h-36 object-cover rounded-md mb-2" />
                         <p className="text-black text-[11px] md:text-[13px] xl:text-[16px] font-bold  text-center">{item.title}</p>
                         <p className="text-gray-800 text-[10px] md:text-[13px] xl:text-[14px]  text-center">{item.subTitle}</p>
                     </div>
