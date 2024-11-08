@@ -51,11 +51,6 @@ pip install -r requirements.txt
 ```
 to install the dependencies.
 
->And to exit:
-```bash
-deactivate
-```
-
 * Environment with CUDA support is recommended for better performance (optional).
 If your system supports it, install the package:
 (change the url end number to your CUDA version - in this sample, the CUDA version is 124)
@@ -75,6 +70,10 @@ When requested, demucs, whisper and ffmepg will process the data and return the 
 If you want to close the backend application, type on console:
 ```bash
 CTRL + C
+```
+>If you chose to use the virtual enviroment, you can exit with:
+```bash
+deactivate
 ```
 
 ## Project Structure
