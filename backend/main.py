@@ -25,12 +25,18 @@ admin.add_view(ModelView(VideoInfo, db.session))
 def carousel():
     # size = request.json.get("size")
     size = 10
-    db = VideoInfo.query.all()[:size]
-    response = []
-    for video in db:
-        video_info = get_video_info_uid(video.uid)
-        response.append(video_info)
-    return jsonify(response)
+    db_entries = VideoInfo.query.all()[:size]
+    results = [
+        {
+            "uid": entry.uid,
+            "title": entry.title,
+            "thumbnail": entry.thumbnail,
+            "channel": entry.channel,
+            "duration": entry.duration,
+        }
+        for entry in db_entries
+    ]
+    return jsonify(results)
 
 
 @app.route("/api/video/info", methods=["POST"])
@@ -136,7 +142,7 @@ def karaoke_process(url):
         with app.app_context():
             info = get_video_info(url)
             infodb = VideoInfo(
-                uid=uid, title=info["title"], channel=info["channel"], duration=info["duration"])
+                uid=uid, title=info["title"], thumbnail=info["thumbnail"], channel=info["channel"], duration=info["duration"])
             db.session.add(infodb)
             db.session.commit()
 

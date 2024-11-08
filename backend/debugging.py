@@ -30,6 +30,7 @@ def debug_process(url):
 
 def update_db():
     with app.app_context():
+        print("updating db")
 
         db.drop_all()
         db.create_all()
@@ -37,7 +38,7 @@ def update_db():
             if os.path.isdir(os.path.join(data_folder, name)):
                 info = get_video_info_uid(name)
                 infodb = VideoInfo(
-                    uid=name, title=info["title"], channel=info["channel"], duration=info["duration"])
+                    uid=name, title=info["title"], thumbnail=info["thumbnail"], channel=info["channel"], duration=info["duration"])
                 db.session.add(infodb)
 
         db.session.commit()
