@@ -48,15 +48,15 @@ def updatedb():
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 1 and len(sys.argv) < 3:
         if sys.argv[1] == "processtest":
-            processtest()
-        elif sys.argv[1] == "updatedb":
-            if sys.argv[2]:
-                updatedb(sys.argv[2])
+            if len(sys.argv) > 2 and sys.argv[2]:
+                processtest(sys.argv[2])
             else:
-                updatedb()
+                processtest()
+        elif sys.argv[1] == "updatedb":
+            updatedb()
         else:
             print("wrong args")
     else:
-        print("no args given")
+        print("wrong args")

@@ -70,6 +70,8 @@ function VideoPage() {
             });
 
             if (!postResponse.ok) {
+                postData = await postResponse.json();
+                console.log(postData);
                 throw new Error('Erro ao processar o vídeo.');
             }
             else {

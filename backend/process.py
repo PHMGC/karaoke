@@ -46,11 +46,9 @@ def get_video_info_uid(uid):
     return get_video_info("https://www.youtube.com/watch?v=" + uid)
 
 
-def get_video_info(url, uid=None):
-    if not uid:
-        uid = extract_uid(url)
-        if uid is None:
-            return None
+def get_video_info(url):
+    uid = extract_uid(url)
+
     try:
         thumbs_options = [
             "maxresdefault.jpg",
@@ -281,9 +279,11 @@ def generate_video(uid, data_folder, debug=False):
 
 
 def cleanup(uid, data_folder):
+    print("cleanup started")
     no_delete = ["final_video.mp4", "final_video_debug.mp4"]
     video_folder = os.path.join(data_folder, uid)
     for file in os.listdir(video_folder):
         file_path = os.path.join(video_folder, file)
         if os.path.isfile(file_path) and file not in no_delete:
             os.remove(file_path)
+    print("cleanup finnished")

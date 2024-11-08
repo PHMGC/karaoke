@@ -34,7 +34,7 @@ const Carousel = () => {
     useEffect(() => {
 
         const fetchCarouselData = async () => {
-            console.log("inciou")
+            //console.log("inciou")
             try {
                 const response = await fetch('api/carousel');
                 if (!response.ok) {
