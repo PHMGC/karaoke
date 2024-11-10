@@ -29,37 +29,33 @@ def format_time(seconds):
         f"{m}:{s:02}" if m else f"{s}s")
 
 
-def search_video_info(prompt):
+def extract_uid(url):
+    # Regular expression to match YouTube video IDs
+    pattern = r"(?:v=|\/|youtu\.be\/|\/embed\/|\/v\/|\/watch\?v=|\/\?v=|&v=|\/shorts\/)([a-zA-Z0-9_-]{11})"
+    match = re.search(pattern, url)
+
+    if match:
+        return match.group(1)
+    else:
+        return None
+
+
+def search_video_info(prompt, amount=1):
     try:
-        search = Search(prompt)
+        search = VideosSearch(prompt, limit=amount)
+        videos = search.result()['result']
         response = []
-        for vd in search.videos:
-            response.append({
-                "uid": vd.video_id,
-                "title": vd.title,
-                "thumbnail": vd.thumbnail_url,
-                "channel": vd.author,
-                "duration": format_time(vd.length),
-            })
-        return response
+        for vd in videos:
+            response.append({'uid': vd['id'],
+                             'title': vd['title'],
+                             'thumbnail': vd['thumbnails'][-1]['url'] if vd['thumbnails'] else None,
+                             'channel': vd['channel']['name'],
+                             'duration': vd.get('duration', 'N/A')
+                             })
+        return response[0] if len(response) == 1 else response
     except Exception as e:
         raise e("Error searching video from prompt!")
 
-
-def get_video_info(url):
-    try:
-        search = VideosSearch(url, limit=1)
-        vd = search.result()['result'][0]
-        return {
-                'uid': vd['id'],
-                'title': vd['title'],
-                'thumbnails': vd['thumbnails'][0]['url'] if vd['thumbnails'] else None,
-                'channel': vd['channel']['name'],
-                'duration': vd.get('duration', 'N/A'),
-            }
-        
-    except Exception as e:
-        raise e("Error getting video info from url!")
 
 def get_video(url, data_folder):
     print("get_video() started")
@@ -79,7 +75,7 @@ def get_video(url, data_folder):
 
     finnish = time.time()
     print(f"get_video() was successfull! (took {
-            format_time(finnish - start)})")
+        format_time(finnish - start)})")
 
 
 def demucs_transcript(uid, data_folder):

@@ -14,12 +14,13 @@ function SelectionPage() {
     useEffect(() => {
         const fetchVideosInfo = async () => {
             try {
-                const response = await fetch('api/videos/info', {
+                const amount = 10;
+                const response = await fetch('api/video/info', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ prompt }),
+                    body: JSON.stringify({ prompt, amount }),
                 });
     
                 const data = await response.json();

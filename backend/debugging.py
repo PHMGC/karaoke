@@ -39,7 +39,7 @@ def updatedb():
         db.create_all()
         for name in os.listdir(data_folder):
             if os.path.isdir(os.path.join(data_folder, name)):
-                info = get_video_info_uid(name)
+                info = search_video_info(name)
                 infodb = VideoInfo(
                     uid=name, title=info["title"], thumbnail=info["thumbnail"], channel=info["channel"], duration=info["duration"])
                 db.session.add(infodb)
@@ -47,16 +47,23 @@ def updatedb():
         db.session.commit()
 
 
+def testYT(prompt):
+    result = search_video_info(prompt)
+
+    print(result[0])
+
+
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and len(sys.argv) < 3:
+    if len(sys.argv) > 1:
         if sys.argv[1] == "processtest":
-            if len(sys.argv) > 2 and sys.argv[2]:
+            if len(sys.argv) > 2:
                 processtest(sys.argv[2])
             else:
                 processtest()
         elif sys.argv[1] == "updatedb":
             updatedb()
-        else:
-            print("wrong args")
-    else:
-        print("wrong args")
+        elif sys.argv[1] == "testYT":
+            if len(sys.argv) > 2:
+                testYT(" ".join(sys.argv[2:]))
+
+    print("wrong args")

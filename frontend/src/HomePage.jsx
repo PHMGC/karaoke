@@ -49,7 +49,7 @@ function HomePage() {
                     <form onSubmit={handleSubmit} className="relative">
                         <input
                             type="text"
-                            placeholder="video URL"
+                            placeholder="Search"
                             className="w-full px-4 py-2 border border-gray-300 rounded-md outline-none text-black"
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
@@ -67,7 +67,7 @@ function HomePage() {
             </div>
 
             <div className="flex-grow-[1] flex flex-col justify-center items-center p-12">
-                <p className='pb-4 text-center text-xl text-black'>Top 10</p>
+                <p className='pb-4 text-center text-xl text-black'>Recent videos</p>
                 <Carousel />
             </div>
 

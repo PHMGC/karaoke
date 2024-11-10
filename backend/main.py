@@ -42,29 +42,16 @@ def carousel():
 
 @app.route("/api/video/info", methods=["POST"])
 def post_video_info():
-    url = request.json.get("prompt")
-    if not url:
-        error = {"error": "Url is required", "url": url}
-        print(error)
-        return jsonify(error), 400
-    try:
-        return jsonify(get_video_info(url))
-
-    except Exception as e:
-        error = {"error": "Could not get info on given url",
-                 "traceback": str(e.with_traceback())}
-        print(error)
-        return jsonify(error), 400
-    
-@app.route("/api/videos/info", methods=["POST"])
-def post_videos_info():
     prompt = request.json.get("prompt")
+    amount = request.json.get("amount")
     if not prompt:
         error = {"error": "Prompt is required", "prompt": prompt}
         print(error)
         return jsonify(error), 400
+    if not amount:
+        amount = 1
     try:
-        return jsonify(search_video_info(prompt))
+        return jsonify(search_video_info(prompt, amount))
 
     except Exception as e:
         error = {"error": "Could not get info on given prompt",
@@ -75,7 +62,7 @@ def post_videos_info():
 
 @app.route("/api/video/karaoke", methods=["POST"])
 def karaoke_route():
-    url = request.json.get("url")
+    url = request.json.get("prompt")
     if not url:
         error = {"error": "URL is required"}
         print(error)
@@ -170,7 +157,7 @@ def karaoke_process(url):
 
         # if successfull, than add to db
         with app.app_context():
-            info = get_video_info(url)
+            info = search_video_info(url)
             infodb = VideoInfo(
                 uid=uid, title=info["title"], thumbnail=info["thumbnail"], channel=info["channel"], duration=info["duration"])
             db.session.add(infodb)
