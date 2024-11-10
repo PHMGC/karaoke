@@ -3,31 +3,35 @@ import { useNavigate } from 'react-router-dom'; // Correção na importação
 import { FaSearch } from 'react-icons/fa'; // Ícone de lupa
 import Carousel from './Carousel';
 
-// this file is responsible for the first page of the app, where the user inputs a YT url.
+// this file is responsible for the first page of the app, where the user inputs a YT prompt.
 
 function HomePage() {
 
     // Variáveis auxiliares
-    const [url, setUrl] = useState('');
+    const [prompt, setPrompt] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
     // Função de validação para checar se é um URL válido do YouTube
-    const isValidYouTubeUrl = (url) => {
+    const isValidYouTubeUrl = (prompt) => {
         const regex = /^(https?:\/\/)?(www\.youtube\.com|youtu\.?be)\/.+$/;
-        return regex.test(url);
+        return regex.test(prompt);
     };
 
     // Função para lidar com o envio do formulário  
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!isValidYouTubeUrl(url)) {
-            setError('Por favor, insira um link válido do YouTube.');
-            return;
+        if (!isValidYouTubeUrl(prompt)) {
+            try {
+                setError(''); // Remove qualquer mensagem de erro anterior
+                navigate('/videos', { state: { prompt } }); // Redireciona para a segunda página
+            } catch (err) {
+                setError('Erro ao conectar com o servidor.');
+            }
         }
         try {
             setError(''); // Remove qualquer mensagem de erro anterior
-            navigate('/video', { state: { url } }); // Redireciona para a segunda página
+            navigate('/video', { state: { prompt } }); // Redireciona para a segunda página
         } catch (err) {
             setError('Erro ao conectar com o servidor.');
         }
@@ -49,8 +53,8 @@ function HomePage() {
                             type="text"
                             placeholder="video URL"
                             className="w-full px-4 py-2 border border-gray-300 rounded-md outline-none text-black"
-                            value={url}
-                            onChange={(e) => setUrl(e.target.value)}
+                            value={prompt}
+                            onChange={(e) => setPrompt(e.target.value)}
                         />
                         <button type="submit" className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 cursor-pointer">
                             <FaSearch />

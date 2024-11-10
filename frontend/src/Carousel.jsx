@@ -26,7 +26,8 @@ const Carousel = () => {
     
       const handleMouseUp = async (id) => {
         if (!dragging ) {
-            navigate(`/video`);
+            const prompt = 'https://www.youtube.com/watch?v=' + id
+            navigate('/video', { state: { prompt } });
         }
       };
 

@@ -9,7 +9,7 @@ function VideoPage() {
     // variaveis auxiliares
     const location = useLocation();
     const navigate = useNavigate();
-    const { url } = location.state || {}; // recebe a url do video da rota /
+    const { prompt } = location.state || {}; // recebe o prompt do video da rota /
     const [uid, setUid] = useState('');
     const [videoPath, setVideoPath] = useState('');
     const [videoInfo, setVideoInfo] = useState(null);
@@ -23,7 +23,7 @@ function VideoPage() {
 
 
 
-    // essa parte envia uma requisição para a api no backend, do tipo POST (envia a url),
+    // essa parte envia uma requisição para a api no backend, do tipo POST (envia o prompt),
     // e armazena na variável VideoInfo as informaçoes do video.
     useEffect(() => {
         const fetchVideoInfo = async () => {
@@ -33,24 +33,24 @@ function VideoPage() {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ url }),
+                    body: JSON.stringify({ prompt }),
                 });
 
                 const data = await response.json();
                 setVideoInfo({
-                    title: data.title,
-                    thumbnail: data.thumbnail,
-                    channel: data.channel,
-                    duration: data.duration,
+                    title: data[0].title,
+                    thumbnail: data[0].thumbnail,
+                    channel: data[0].channel,
+                    duration: data[0].duration,
                 });
             } catch (error) {
                 console.error('Erro ao buscar informações do vídeo:', error);
             }
         };
-        if (url) {
+        if (prompt) {
             fetchVideoInfo();
         }
-    }, [url]);
+    }, [prompt]);
 
     // inicia o processo de geração
     const handleGenerateKaraoke = async () => {
@@ -66,7 +66,7 @@ function VideoPage() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ url }),
+                body: JSON.stringify({ prompt }),
             });
 
             if (!postResponse.ok) {
