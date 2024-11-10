@@ -38,10 +38,10 @@ function VideoPage() {
 
                 const data = await response.json();
                 setVideoInfo({
-                    title: data[0].title,
-                    thumbnail: data[0].thumbnail,
-                    channel: data[0].channel,
-                    duration: data[0].duration,
+                    title: data.title,
+                    thumbnail: data.thumbnail,
+                    channel: data.channel,
+                    duration: data.duration,
                 });
             } catch (error) {
                 console.error('Erro ao buscar informações do vídeo:', error);

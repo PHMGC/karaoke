@@ -42,9 +42,25 @@ def carousel():
 
 @app.route("/api/video/info", methods=["POST"])
 def post_video_info():
+    url = request.json.get("prompt")
+    if not url:
+        error = {"error": "Url is required", "url": url}
+        print(error)
+        return jsonify(error), 400
+    try:
+        return jsonify(get_video_info(url))
+
+    except Exception as e:
+        error = {"error": "Could not get info on given url",
+                 "traceback": str(e.with_traceback())}
+        print(error)
+        return jsonify(error), 400
+    
+@app.route("/api/videos/info", methods=["POST"])
+def post_videos_info():
     prompt = request.json.get("prompt")
     if not prompt:
-        error = {"error": "Prompt is required"}
+        error = {"error": "Prompt is required", "prompt": prompt}
         print(error)
         return jsonify(error), 400
     try:

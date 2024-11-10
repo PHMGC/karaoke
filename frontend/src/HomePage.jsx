@@ -21,21 +21,19 @@ function HomePage() {
     // Função para lidar com o envio do formulário  
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!isValidYouTubeUrl(prompt)) {
-            try {
-                setError(''); // Remove qualquer mensagem de erro anterior
-                navigate('/videos', { state: { prompt } }); // Redireciona para a segunda página
-            } catch (err) {
-                setError('Erro ao conectar com o servidor.');
-            }
-        }
+        setError(''); // Remove qualquer mensagem de erro anterior
+    
         try {
-            setError(''); // Remove qualquer mensagem de erro anterior
-            navigate('/video', { state: { prompt } }); // Redireciona para a segunda página
+            if (!isValidYouTubeUrl(prompt)) {
+                navigate('/videos', { state: { prompt } }); // Redireciona para '/videos' se o URL for inválido
+            } else {
+                navigate('/video', { state: { prompt } }); // Redireciona para '/video' se o URL for válido
+            }
         } catch (err) {
             setError('Erro ao conectar com o servidor.');
         }
     };
+    
 
     return (
         <div className="min-h-screen flex flex-col font-jetbrains">

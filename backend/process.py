@@ -6,7 +6,8 @@ import subprocess
 import numpy as np
 import pysrt
 import requests
-from pytubefix import YouTube, Search
+from pytubefix import YouTube
+from youtubesearchpython import VideosSearch
 import torch
 from faster_whisper import WhisperModel
 import librosa
@@ -23,122 +24,62 @@ model = WhisperModel("large-v2", device=device)
 
 
 def format_time(seconds):
-    # Format time in seconds to SRT time format (HH:MM:SS,mmm)
-    hours = int(seconds // 3600)
-    minutes = int((seconds % 3600) // 60)
-    secs = int(seconds % 60)
-    millis = int((seconds - int(seconds)) * 1000)
-    return f"{hours:02}:{minutes:02}:{secs:02},{millis:03}"
-
-
-def extract_uid(url):
-    # Regular expression to match YouTube video IDs
-    pattern = r"(?:v=|\/|youtu\.be\/|\/embed\/|\/v\/|\/watch\?v=|\/\?v=|&v=|\/shorts\/)([a-zA-Z0-9_-]{11})"
-    match = re.search(pattern, url)
-
-    if match:
-        return match.group(1)
-    else:
-        return None
-
-
-def is_youtube_video_url(prompt):
-    pattern = re.compile(
-        r'(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)[\w-]+(&\S*)?'
-    )
-    return bool(pattern.match(prompt))
+    h, m, s = seconds // 3600, (seconds % 3600) // 60, seconds % 60
+    return f"{h}:{m:02}:{s:02}" if h else (
+        f"{m}:{s:02}" if m else f"{s}s")
 
 
 def search_video_info(prompt):
     try:
-        if not is_youtube_video_url(prompt):
-            search = Search(prompt)
-            response = []
-            for video in search.videos:
-                response.append(get_video_info(video.watch_url))
-        else:
-            return [get_video_info(prompt)]
+        search = Search(prompt)
+        response = []
+        for vd in search.videos:
+            response.append({
+                "uid": vd.video_id,
+                "title": vd.title,
+                "thumbnail": vd.thumbnail_url,
+                "channel": vd.author,
+                "duration": format_time(vd.length),
+            })
+        return response
     except Exception as e:
         raise e("Error searching video from prompt!")
 
 
-def get_video_info_uid(uid):
-    return get_video_info("https://www.youtube.com/watch?v=" + uid)
-
-
 def get_video_info(url):
     try:
-        uid = extract_uid(url)
-
-        thumbs_options = [
-            "maxresdefault.jpg",
-            "sddefault.jpg",
-            "hqdefault.jpg",
-            "mqdefault.jpg",
-            "default.jpg",
-        ]
-
-        thumbnail = ""
-        for option in thumbs_options:
-            url = f"https://img.youtube.com/vi/{uid}/" + option
-            response = requests.get(url)
-            if response.status_code == 200:
-                thumbnail = url
-                break
-
-        vd = YouTube(url)
-        title = vd.title
-        channel = vd.author
-        h, m, s = vd.length // 3600, (vd.length % 3600) // 60, vd.length % 60
-        duration = f"{h}:{m:02}:{s:02}" if h else (
-            f"{m}:{s:02}" if m else f"{s}s")
+        search = VideosSearch(url, limit=1)
+        vd = search.result()['result'][0]
         return {
-            "uid": uid,
-            "title": title,
-            "thumbnail": thumbnail,
-            "channel": channel,
-            "duration": duration,
-        }
-
+                'uid': vd['id'],
+                'title': vd['title'],
+                'thumbnails': vd['thumbnails'][0]['url'] if vd['thumbnails'] else None,
+                'channel': vd['channel']['name'],
+                'duration': vd.get('duration', 'N/A'),
+            }
+        
     except Exception as e:
-        raise e("Error getting video id!")
-
+        raise e("Error getting video info from url!")
 
 def get_video(url, data_folder):
     print("get_video() started")
     start = time.time()
 
-    uid = extract_uid(url)
-
-    video_path = os.path.join(data_folder, uid)
+    vd = YouTube(url)
+    video_path = os.path.join(data_folder, vd.video_id)
     if not os.path.exists(video_path):
         os.makedirs(video_path)
-
-    vd = YouTube(url)
 
     stream = vd.streams.filter(only_audio=True).first()
     stream.download(output_path=video_path, filename="audio.mp3")
 
-    thumbs_options = [
-        "maxresdefault.jpg",
-        "sddefault.jpg",
-        "hqdefault.jpg",
-        "mqdefault.jpg",
-        "default.jpg",
-    ]
+    thumb = requests.get(vd.thumbnail_url)
+    with open(os.path.join(video_path, "thumbnail.jpg"), "wb") as f:
+        f.write(thumb.content)
 
-    for option in thumbs_options:
-        response = requests.get(f"https://img.youtube.com/vi/{uid}/" + option)
-        if response.status_code == 200:
-            with open(os.path.join(video_path, "thumbnail.jpg"), "wb") as f:
-                f.write(response.content)
-
-            finnish = time.time()
-            print(f"get_video() was successfull! (took {
-                  format_time(finnish - start)})")
-            return
-
-    raise ConnectionError("Error downloading thumbnail!")
+    finnish = time.time()
+    print(f"get_video() was successfull! (took {
+            format_time(finnish - start)})")
 
 
 def demucs_transcript(uid, data_folder):
