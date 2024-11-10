@@ -6,7 +6,7 @@ import subprocess
 import numpy as np
 import pysrt
 import requests
-from pytubefix import YouTube
+from pytubefix import YouTube, Search
 import torch
 from faster_whisper import WhisperModel
 import librosa
@@ -42,14 +42,34 @@ def extract_uid(url):
         return None
 
 
+def is_youtube_video_url(prompt):
+    pattern = re.compile(
+        r'(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)[\w-]+(&\S*)?'
+    )
+    return bool(pattern.match(prompt))
+
+
+def search_video_info(prompt):
+    try:
+        if not is_youtube_video_url(prompt):
+            search = Search(prompt)
+            response = []
+            for video in search.videos:
+                response.append(get_video_info(video.watch_url))
+        else:
+            return [get_video_info(prompt)]
+    except Exception as e:
+        raise e("Error searching video from prompt!")
+
+
 def get_video_info_uid(uid):
     return get_video_info("https://www.youtube.com/watch?v=" + uid)
 
 
 def get_video_info(url):
-    uid = extract_uid(url)
-
     try:
+        uid = extract_uid(url)
+
         thumbs_options = [
             "maxresdefault.jpg",
             "sddefault.jpg",

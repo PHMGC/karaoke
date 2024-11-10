@@ -40,49 +40,26 @@ def carousel():
     return jsonify(results)
 
 
-def check_dur(duration):
-    parts = list(map(int, duration.split(':')))
-    if len(parts) == 3:
-        h, m, _ = parts
-    elif len(parts) == 2:
-        h = 0
-        m, _ = parts
-    elif len(parts) == 1:
-        h = 0
-        m = 0
-    else:
-        raise ValueError("Wrong hour format")
-
-    total_m = h * 60 + m
-    return total_m < max_dur_m
-
-
 @app.route("/api/video/info", methods=["POST"])
 def post_video_info():
-    url = request.json.get("url")
-    if not url:
-        error = {"error": "URL is required"}
+    prompt = request.json.get("prompt")
+    if not prompt:
+        error = {"error": "Prompt is required"}
         print(error)
         return jsonify(error), 400
     try:
-        video_info = get_video_info(url)
-        if check_dur(video_info["duration"]):
-            return jsonify(video_info)
-        else:
-            error = {"error": f"Video is too long, max {max_dur_m} minutes"}
-            print(error)
-            return jsonify({"error": f"Video is too long, max {max_dur_m} minutes"}), 400
+        return jsonify(search_video_info(prompt))
 
     except Exception as e:
-        error = {"error": "Could not get info on given url",
-                 "traceback": str(e)}
+        error = {"error": "Could not get info on given prompt",
+                 "traceback": str(e.with_traceback())}
         print(error)
         return jsonify(error), 400
 
 
 @app.route("/api/video/karaoke", methods=["POST"])
 def karaoke_route():
-    url = request.json.get("url")  # Apenas POST deve receber JSON
+    url = request.json.get("url")
     if not url:
         error = {"error": "URL is required"}
         print(error)
