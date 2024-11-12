@@ -148,6 +148,32 @@ function VideoPage() {
         navigate('/'); // voltar para a pagina anterior ao clicar no botao voltar
     };
 
+    const setLimitTime = () => {
+        const timeParts = videoInfo.duration.split(':').map(Number);
+      
+        let totalSeconds = 0;
+        if (timeParts.length === 3) {
+          // Formato HH:MM:SS
+          const [hours, minutes, seconds] = timeParts;
+          totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+        } else if (timeParts.length === 2) {
+          // Formato MM:SS
+          const [minutes, seconds] = timeParts;
+          totalSeconds = (minutes * 60) + seconds;
+        } else if (timeParts.length === 1) {
+          // Caso de segurança para um número isolado (assumido como segundos)
+          const [seconds] = timeParts;
+          totalSeconds = seconds;
+        }
+      
+        if (totalSeconds <= 900) {
+          handleGenerateKaraoke();
+        } else {
+          setError("O vídeo não pode ter duração maior que 15 minutos!");
+        }
+      };
+      
+
     // ---------------------------------------------------------------------------------------------
     return (
         <div className="min-h-screen flex flex-col font-jetbrains">
@@ -200,7 +226,7 @@ function VideoPage() {
                                 {!loadingVideo && !error && (
                                     <button
                                         className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                                        onClick={handleGenerateKaraoke}
+                                        onClick={setLimitTime}
                                         disabled={loadingVideo}
                                     >
                                         Iniciar Karaoke

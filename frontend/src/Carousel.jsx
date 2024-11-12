@@ -100,18 +100,14 @@ const Carousel = () => {
     return (
         <div className="w-full mx-auto">
             {carouselLoading ? (
-                <div className="flex flex-row justify-center gap-4">
-                    {[...Array(5)].map((_, index) => (
-                        <div key={index} className="flex flex-col items-center p-4 hover:cursor-pointer outline-none">
-                            <div className="w-full aspect-video">
-                                <div className="flex flex-col gap-2 w-72 p-6">
-                                    <div className="w-full h-36 bg-gray-300 animate-pulse rounded-md"></div>
-                                    <div className="h-4 bg-gray-300 animate-pulse rounded w-3/4"></div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+            <Slider {...settings}>
+                {[...Array(10)].map((item, index) => (
+                    <div key={index} className="flex flex-col gap-4 items-center p-4 
+                    hover:cursor-pointer outline-none">
+                        <div className=" flex w-full h-36 bg-gray-300 animate-pulse rounded-md"></div>
+                    </div>
+                ))}
+            </Slider>
             ) : (
                 <Slider {...settings}>
                     {sliderItems.map((item) => (
