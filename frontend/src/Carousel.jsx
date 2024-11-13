@@ -99,44 +99,55 @@ const Carousel = () => {
 
     return (
         <div className="w-full mx-auto">
-            {carouselLoading ? (
-            <Slider {...settings}>
-                {[...Array(10)].map((item, index) => (
-                    <div key={index} className="flex flex-col gap-4 items-center p-4 
-                    hover:cursor-pointer outline-none">
-                        <div className=" flex w-full h-36 bg-gray-300 animate-pulse rounded-md"></div>
-                    </div>
-                ))}
-            </Slider>
-            ) : (
-                <Slider {...settings}>
-                    {sliderItems.map((item) => (
-                        <div
-                            onMouseDown={handleMouseDown}
-                            onMouseMove={handleMouseMove}
-                            onMouseUp={() => handleMouseUp(item.uid)}
-                            key={item.uid}
-                            className="flex flex-col items-center p-4 hover:cursor-pointer outline-none"
-                        >
-                            <div className="w-full aspect-video">
-                                <img
-                                    src={item.thumbnail}
-                                    alt={item.title}
-                                    className="w-full h-full object-cover rounded-md"
-                                />
-                            </div>
-                            <p className="text-black text-[11px] md:text-[13px] xl:text-[16px] font-bold text-center">
-                                {item.title}
-                            </p>
-                            <p className="text-gray-800 text-[10px] md:text-[13px] xl:text-[14px] text-center">
-                                {item.subTitle}
-                            </p>
+            {carouselLoading && dbVideos >= 10 ? (
+                // Mostrar o esqueleto durante o carregamento
+                <Slider {...settings} className='pb-16'>
+                    {[...Array(10)].map((item, index) => (
+                        <div key={index} className="flex flex-col gap-4 items-center p-4 
+                        hover:cursor-pointer outline-none">
+                            <div className="flex w-full h-36 bg-gray-300 animate-pulse rounded-md"></div>
                         </div>
                     ))}
                 </Slider>
+            ) : (
+                dbVideos >= 10 ? (
+                    // Mostrar o carrossel se dbVideos >= 10
+                    <div>
+                        <p className='pb-4 text-center text-xl text-black'>Recent videos</p>
+                        <Slider {...settings}>
+                            {sliderItems.map((item) => (
+                                <div
+                                    onMouseDown={handleMouseDown}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseUp={() => handleMouseUp(item.uid)}
+                                    key={item.uid}
+                                    className="flex flex-col items-center p-4 hover:cursor-pointer outline-none"
+                                >
+                                    <div className="w-full aspect-video">
+                                        <img
+                                            src={item.thumbnail}
+                                            alt={item.title}
+                                            className="w-full h-full object-cover rounded-md"
+                                        />
+                                    </div>
+                                    <p className="text-black text-[11px] md:text-[13px] xl:text-[16px] font-bold text-center">
+                                        {item.title}
+                                    </p>
+                                    <p className="text-gray-800 text-[10px] md:text-[13px] xl:text-[14px] text-center">
+                                        {item.subTitle}
+                                    </p>
+                                </div>
+                            ))}
+                        </Slider>
+                    </div>
+                ) : (
+                    
+                    <div className=" h-[300px] w-full bg-transparent"></div>
+                )
             )}
         </div>
     );
+    
 };
 
 export default Carousel;

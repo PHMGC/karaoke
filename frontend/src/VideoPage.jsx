@@ -159,6 +159,7 @@ function VideoPage() {
         } else if (timeParts.length === 2) {
           // Formato MM:SS
           const [minutes, seconds] = timeParts;
+          
           totalSeconds = (minutes * 60) + seconds;
         } else if (timeParts.length === 1) {
           // Caso de segurança para um número isolado (assumido como segundos)

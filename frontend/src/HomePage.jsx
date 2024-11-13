@@ -66,13 +66,13 @@ function HomePage() {
                 </div>
             </div>
 
-            <div className="flex-grow-[1] flex flex-col justify-center items-center p-12">
-                <p className='pb-4 text-center text-xl text-black'>Recent videos</p>
+            <div className=" flex-grow-[1] flex flex-col justify-center items-center p-12">
+                
                 <Carousel />
             </div>
 
             <footer className='flex items-center justify-center pb-2'>
-                <span className="text-sm">© {new Date().getFullYear()} | Gustavo Ribeiro & Pedro Cortez</span>
+                <span className="sm:text-[12px] lg:text-[16px]">© {new Date().getFullYear()} | Gustavo Ribeiro & Pedro Cortez</span>
             </footer>
         </div>
     );
