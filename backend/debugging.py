@@ -55,17 +55,23 @@ def testYT(prompt):
     print(result[0])
 
 
-if __name__ == "__main__":
+def main():
     if len(sys.argv) > 1:
         if sys.argv[1] == "processtest":
             if len(sys.argv) > 2:
                 processtest(" ".join(sys.argv[2:]))
             else:
                 processtest()
+            return
         elif sys.argv[1] == "updatedb":
             updatedb()
+            return
         elif sys.argv[1] == "testYT":
             if len(sys.argv) > 2:
                 testYT(" ".join(sys.argv[2:]))
-
+            return
     print("wrong args")
+
+
+if __name__ == "__main__":
+    main()

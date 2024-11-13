@@ -25,8 +25,15 @@ model = WhisperModel("large-v2", device=device)
 
 def format_time(seconds):
     h, m, s = seconds // 3600, (seconds % 3600) // 60, seconds % 60
-    return f"{h}:{m:02}:{s:.2f}" if h else (
-        f"{m}:{s:.2f}" if m else f"{s:.2f}s")
+    return f"{h:02}:{m:02}:{s:.2f}" if h else (
+        f"{m:02}:{s:.2f}" if m else f"{s:.2f}s")
+
+def format_time_srt(seconds):
+    h = int(seconds // 3600)
+    m = int((seconds % 3600) // 60)
+    s = int(seconds % 60)
+    ms = int((seconds - int(seconds)) * 1000)
+    return f"{h:02}:{m:02}:{s:02},{ms:03}"
 
 
 def extract_uid(url):
@@ -159,18 +166,20 @@ def whisper_transcript(uid, data_folder, queue=None):
     with open(os.path.join(audio_folder, "vocals.srt"), "w", encoding="utf-8") as f:
         total_duration = round(info.duration, 2)
         curr_duration = 0
+        offset = 0.5
         for i, segment in enumerate(segments):
             curr_duration += segment.end - segment.start
             progress = int((curr_duration / total_duration) * 100)
+            print(f"\Progress: {i}", end="")
             if queue is not None:
                 queue.put(progress)
 
             f.write(f"{i + 1}\n")
             if i == 0:
-                start_time = format_time(first_sub)
+                start_time = format_time_srt(first_sub)
             else:
-                start_time = format_time(segment.start)
-            end_time = format_time(segment.end)
+                start_time = format_time_srt(max(0, segment.start - offset))
+            end_time = format_time_srt(segment.end)
             f.write(f"{start_time} --> {end_time}\n")
             f.write(f"{segment.text}\n\n")
 
