@@ -9,7 +9,10 @@ import requests
 from pytubefix import YouTube
 from youtubesearchpython import VideosSearch
 import torch
-from faster_whisper import WhisperModel
+#from faster_whisper import WhisperModel
+import whisperx
+from whisperx.utils import WriteSRT
+import gc 
 import librosa
 from pathlib import Path
 
@@ -19,14 +22,19 @@ print("Whisper is using", device)
 
 # see models here: https://github.com/SYSTRAN/faster-whisper
 
-# model = WhisperModel("distil-large-v2", device=device)
-model = WhisperModel("large-v2", device=device)
+#model = WhisperModel("distil-large-v3", device=device)
+#model = WhisperModel("large-v3", device=device)
+
+batch_size = 16 # reduce if low on GPU mem
+compute_type = "float16" # change to "int8" if low on GPU mem (may reduce accuracy)
+
+model = whisperx.load_model("large-v2", device, compute_type=compute_type)
 
 
 def format_time(seconds):
     h, m, s = seconds // 3600, (seconds % 3600) // 60, seconds % 60
     return f"{h:02}:{m:02}:{s:.2f}" if h else (
-        f"{m:02}:{s:.2f}" if m else f"{s:.2f}s")
+        f"{m:02}:{s:02}" if m else f"{s:.2f}s")
 
 def format_time_srt(seconds):
     h = int(seconds // 3600)
@@ -152,38 +160,51 @@ def whisper_transcript(uid, data_folder, queue=None):
         print(f"Audio file not found or empty: {audio_path}")
         return
 
-    first_sub = first_no_silence(audio_path)
 
-    language_info = model.detect_language_multi_segment(audio_path)
-    language = language_info["language_code"]
-    segments, info = model.transcribe(
-        audio_path, beam_size=5, language=language
-    )
+    audio = whisperx.load_audio(audio_path)
+    result = model.transcribe(audio, batch_size=batch_size)
 
-    print(f"Detected language {language} with probability {
-          language_info["language_confidence"]}")
-
-    with open(os.path.join(audio_folder, "vocals.srt"), "w", encoding="utf-8") as f:
-        total_duration = round(info.duration, 2)
-        curr_duration = 0
-        offset = 0.5
-        for i, segment in enumerate(segments):
-            curr_duration += segment.end - segment.start
-            progress = int((curr_duration / total_duration) * 100)
-            print(f"\Progress: {i}", end="")
-            if queue is not None:
-                queue.put(progress)
-
-            f.write(f"{i + 1}\n")
-            if i == 0:
-                start_time = format_time_srt(first_sub)
-            else:
-                start_time = format_time_srt(max(0, segment.start - offset))
-            end_time = format_time_srt(segment.end)
-            f.write(f"{start_time} --> {end_time}\n")
-            f.write(f"{segment.text}\n\n")
+    model_a, metadata = whisperx.load_align_model(language_code=result["language"], device=device)
+    aligned_result = whisperx.align(result["segments"], model_a, metadata, audio, device, return_char_alignments=False)
+    aligned_result["language"] = result["language"]
 
     subs_file = os.path.join(audio_folder, "vocals.srt")
+
+    with open(subs_file, "w", encoding="utf-8") as srt:
+        writer = WriteSRT(".")
+        writer.write_result(aligned_result, srt, {})
+    # first_sub = first_no_silence(audio_path)
+
+    # language_info = model.detect_language_multi_segment(audio_path)
+    # language = language_info["language_code"]
+    # segments, info = model.transcribe(
+    #     audio_path, beam_size=5, language=language
+    # )
+
+    # print(f"Detected language {language} with probability {
+    #       language_info["language_confidence"]}")
+
+    # with open(os.path.join(audio_folder, "vocals.srt"), "w", encoding="utf-8") as f:
+    #     total_duration = round(info.duration, 2)
+    #     curr_duration = 0
+    #     offset = 0.5
+    #     for i, segment in enumerate(segments):
+    #         curr_duration += segment.end - segment.start
+    #         progress = int((curr_duration / total_duration) * 100)
+    #         print(f"\rProgress: {progress}", end="")
+    #         if queue is not None:
+    #             queue.put(progress)
+
+    #         f.write(f"{i + 1}\n")
+    #         if i == 0:
+    #             start_time = format_time_srt(first_sub)
+    #         else:
+    #             start_time = format_time_srt(max(0, segment.start - offset))
+    #         end_time = format_time_srt(segment.end)
+    #         f.write(f"{start_time} --> {end_time}\n")
+    #         f.write(f"{segment.text}\n\n")
+    #     print()
+
     if not os.path.exists(subs_file):
         raise SystemError("whisper failed!")
 
