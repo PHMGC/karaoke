@@ -22,6 +22,7 @@ function SelectionPage() {
     
                 const data = await response.json();
                 const mappedData = data.map(item => ({
+                    uid: item.uid,
                     title: item.title,
                     thumbnail: item.thumbnail,
                     channel: item.channel,
@@ -37,6 +38,11 @@ function SelectionPage() {
         }
     }, [prompt]);
 
+    const handleVideoClick = (id) => {
+        const prompt = 'https://www.youtube.com/watch?v=' + id;
+        navigate('/video', { state: { prompt } });
+    };
+
     return(
         <div className="min-h-screen flex flex-col font-jetbrains">
             <header className="p-4 flex items-center z-10">
@@ -49,7 +55,11 @@ function SelectionPage() {
             <div className="grid grid-cols-1 gap-4 p-4 px-10 md:px-20 lg:px-44">
                 {videosInfo && videosInfo.length > 0 ? (
                     videosInfo.map((item, index) => (
-                    <div key={index} className="hover:cursor-pointer border border-gray-300 p-4 gap-8 rounded-lg flex flex-col lg:flex-row">
+                        <div 
+                            key={index} 
+                            className="hover:cursor-pointer border border-gray-300 p-4 gap-8 rounded-lg flex flex-col lg:flex-row"
+                            onClick={() => handleVideoClick(item.uid)}
+                        >
                         <div className="mx-auto justify-center items-center flex flex-2 max-w-[300px] lg:max-w-[400px] aspect-video">
                             <img
                                 src={item.thumbnail}
