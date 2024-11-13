@@ -20,15 +20,17 @@ url8 = "https://www.youtube.com/watch?v=doLMt10ytHY"  # es/jap
 data_folder = "data"
 
 
-def processtest(url=None):
-    if not url:
-        url = url2
-    uid = extract_uid(url)
+def processtest(prompt=None):
+    if not prompt:
+        prompt = url2
+    search = search_video_info(prompt)
+    uid = search["uid"]
+    url = 'https://www.youtube.com/watch?v=' + uid
     get_video(url, data_folder)
     demucs_transcript(uid, data_folder)
     whisper_transcript(uid, data_folder)
     generate_video(uid, data_folder, True)
-    cleanup(uid, data_folder)
+    #cleanup(uid, data_folder)
 
 
 def updatedb():
@@ -57,7 +59,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         if sys.argv[1] == "processtest":
             if len(sys.argv) > 2:
-                processtest(sys.argv[2])
+                processtest(" ".join(sys.argv[2:]))
             else:
                 processtest()
         elif sys.argv[1] == "updatedb":

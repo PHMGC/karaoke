@@ -25,8 +25,8 @@ model = WhisperModel("large-v2", device=device)
 
 def format_time(seconds):
     h, m, s = seconds // 3600, (seconds % 3600) // 60, seconds % 60
-    return f"{h}:{m:02}:{s:02}" if h else (
-        f"{m}:{s:02}" if m else f"{s}s")
+    return f"{h}:{m:02}:{s:.2f}" if h else (
+        f"{m}:{s:.2f}" if m else f"{s:.2f}s")
 
 
 def extract_uid(url):
